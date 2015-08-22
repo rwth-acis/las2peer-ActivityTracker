@@ -1,0 +1,30 @@
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# LAS2peer files
+/export
+/tmp
+/.las2peer
+/node-storage
+/startup
+/log
+/lib
+etc/ivy/ivy.jar
+/service
+/etc/startup
+*.iml
+/.idea
+restMapping.xml
+/out
+/output/
+
+# IntelliJ
+.idea/
+
+# Eclipse
+.metadata
+.idea/workspace.xml
