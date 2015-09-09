@@ -1,0 +1,1 @@
+java -classpath ../../lib/jooq-3.6.2.jar;../../lib/jooq-meta-3.6.2.jar;../../lib/jooq-codegen-3.6.2.jar;../../lib/mysql-connector-java-5.1.6.jar;. org.jooq.util.GenerationTool /activitytracker_generation_info.xml
