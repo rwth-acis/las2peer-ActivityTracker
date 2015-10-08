@@ -32,6 +32,9 @@
 	<classpathentry kind="lib" path="lib/javassist-3.18.2-GA.jar"/>
 	<classpathentry kind="lib" path="lib/jcip-annotations-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/joda-time-2.2.jar"/>
+	<classpathentry kind="lib" path="lib/jooq-3.6.2.jar"/>
+	<classpathentry kind="lib" path="lib/jooq-codegen-3.6.2.jar"/>
+	<classpathentry kind="lib" path="lib/jooq-meta-3.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/json-smart-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jsr311-api-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/junit-4.11.jar"/>
