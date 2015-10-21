@@ -7,13 +7,30 @@ import java.util.Date;
 
 public class ActivityEx extends Activity {
 
-    private final Object data;
-    private final Object user;
+    private String data;
+
+    private String user;
 
     private ActivityEx(BuilderEx builderEx) {
         super(builderEx);
         this.data = builderEx.data;
         this.user = builderEx.user;
+    }
+
+    public String getData() {
+        return data;
+    }
+
+    public void setData(String data) {
+        this.data = data;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
     }
 
     public static BuilderEx getBuilderEx() {
@@ -22,39 +39,48 @@ public class ActivityEx extends Activity {
 
     public static class BuilderEx extends Builder {
 
-        private Object data;
-        private Object user;
+        private String data;
+        private String user;
 
         public BuilderEx() {
             super();
         }
 
+        public BuilderEx activity(Activity activity) {
+            creationTime(activity.getCreationTime());
+            activityAction(activity.getActivityAction());
+            dataUrl(activity.getDataUrl());
+            dataType(activity.getDataType());
+            userUrl(activity.getUserUrl());
+            return this;
+        }
+
         @Override
-        public Builder creationTime(Date creationTime) {
+        public BuilderEx creationTime(Date creationTime) {
             this.creationTime = creationTime;
             return this;
         }
 
         @Override
-        public Builder activityAction(ActivityAction activityAction) {
+        public BuilderEx activityAction(ActivityAction activityAction) {
             this.activityAction = activityAction;
             return this;
         }
 
         @Override
-        public Builder dataUrl(String dataUrl) {
+        public BuilderEx dataUrl(String dataUrl) {
             this.dataUrl = dataUrl;
             return this;
         }
 
         @Override
-        public Builder dataType(DataType dataType) {
+        public BuilderEx dataType(DataType dataType) {
             this.dataType = dataType;
             return this;
         }
 
         @Override
-        public Builder userUrl(String userUrl) {
+        public BuilderEx userUrl(String userUrl) {
             this.userUrl = userUrl;
             return this;
         }
