@@ -3,21 +3,23 @@ package de.rwth.dbis.acis.activitytracker.service;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import com.google.gson.Gson;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
+import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
+import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
+import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
+import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import i5.las2peer.api.Service;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
@@ -27,14 +29,7 @@ import i5.las2peer.restMapper.tools.ValidationResult;
 import i5.las2peer.restMapper.tools.XMLCheck;
 import i5.las2peer.security.Context;
 import i5.las2peer.security.UserAgent;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Contact;
-import io.swagger.annotations.Info;
-import io.swagger.annotations.License;
-import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
@@ -97,7 +92,7 @@ public class ActivityTrackerService extends Service {
         try {
             dalFacade = createConnection();
 
-            List<Activity> activities = dalFacade.findActivitiesForUser(new PageInfo(1, 10));
+            List<Activity> activities = dalFacade.findActivities(new PageInfo(1, 10));
             System.out.println(activities.size());
 
         } catch (Exception ex) {
@@ -106,8 +101,39 @@ public class ActivityTrackerService extends Service {
             closeConnection(dalFacade);
         }
 
-
         return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
+    }
+
+    @GET
+    @Path("/")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "This method returns a list of activities",
+            notes = "Default the latest ten activities will be returned")
+    @ApiResponses(value = {
+            @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities"),
+            @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
+            @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
+    })
+    //TODO add filter
+    public HttpResponse getActivities(
+            @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
+            @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
+        List<Activity> activities = new ArrayList<>();
+        DALFacade dalFacade = null;
+        try {
+            dalFacade = createConnection();
+            Gson gson = new Gson();
+            PageInfo pageInfo = new PageInfo(page, perPage);
+
+            activities = dalFacade.findActivities(pageInfo);
+
+            return new HttpResponse(gson.toJson(activities), HttpURLConnection.HTTP_OK);
+        } catch (Exception ex) {
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.BAZAARSERVICE, ErrorCode.UNKNOWN, "");
+            return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
+        } finally {
+            closeConnection(dalFacade);
+        }
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
