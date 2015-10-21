@@ -11,5 +11,5 @@ public interface DALFacade {
 
     Connection getConnection();
 
-    List<Activity> findActivitiesForUser(Pageable pageable) throws ActivityTrackerException;
+    List<Activity> findActivities(Pageable pageable) throws ActivityTrackerException;
 }
