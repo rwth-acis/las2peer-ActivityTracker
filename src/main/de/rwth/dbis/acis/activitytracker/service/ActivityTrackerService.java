@@ -16,7 +16,6 @@ import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
@@ -28,13 +27,10 @@ import i5.las2peer.restMapper.RESTMapper;
 import i5.las2peer.restMapper.annotations.Version;
 import i5.las2peer.restMapper.tools.ValidationResult;
 import i5.las2peer.restMapper.tools.XMLCheck;
-import i5.las2peer.security.Context;
-import i5.las2peer.security.UserAgent;
 import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
-import net.minidev.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -107,7 +103,7 @@ public class ActivityTrackerService extends Service {
             List<Activity> activities = dalFacade.findActivities(new PageInfo(1, 10));
             System.out.println(activities.size());
 
-            if(activities.size() > 0) {
+            if (activities.size() > 0) {
                 httpGet = new HttpGet(activities.get(0).getDataUrl());
                 response = httpclient.execute(httpGet);
                 System.out.println(response.getStatusLine());
@@ -126,10 +122,9 @@ public class ActivityTrackerService extends Service {
             returnString = "Error";
         } finally {
             closeConnection(dalFacade);
-            try{
+            try {
                 response.close();
-            }
-            catch( Exception ex ) {
+            } catch (Exception ex) {
                 // Could not close the resource?
             }
         }
