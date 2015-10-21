@@ -118,7 +118,7 @@ public class ActivityTrackerService extends Service {
     public HttpResponse getActivities(
             @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
             @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
-        List<Activity> activities = new ArrayList<>();
+        List<Activity> activities = new ArrayList<Activity>();
         DALFacade dalFacade = null;
         try {
             dalFacade = createConnection();
