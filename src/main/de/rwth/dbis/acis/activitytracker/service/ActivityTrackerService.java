@@ -1,6 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.sql.*;
 import java.util.ArrayList;
@@ -34,6 +35,13 @@ import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
 import net.minidev.json.JSONObject;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.jooq.SQLDialect;
 
 /**
@@ -85,20 +93,45 @@ public class ActivityTrackerService extends Service {
             @ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
     })
     public HttpResponse validateLogin() {
-        String returnString = "";
+        String returnString = new String();
         //returnString += "You are " + ((UserAgent) getActiveAgent()).getLoginName() + " and your login is valid!";
 
         DALFacade dalFacade = null;
+
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        HttpGet httpGet;
+        CloseableHttpResponse response = null;
         try {
             dalFacade = createConnection();
 
             List<Activity> activities = dalFacade.findActivities(new PageInfo(1, 10));
             System.out.println(activities.size());
 
+            if(activities.size() > 0) {
+                httpGet = new HttpGet(activities.get(0).getDataUrl());
+                response = httpclient.execute(httpGet);
+                System.out.println(response.getStatusLine());
+                HttpEntity entity = response.getEntity();
+
+                StringWriter writer = new StringWriter();
+                IOUtils.copy(entity.getContent(), writer);
+                String entityString = writer.toString();
+                System.out.println(entityString);
+
+                EntityUtils.consume(entity);
+
+                returnString = entityString;
+            }
         } catch (Exception ex) {
             returnString = "Error";
         } finally {
             closeConnection(dalFacade);
+            try{
+                response.close();
+            }
+            catch( Exception ex ) {
+                // Could not close the resource?
+            }
         }
 
         return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
@@ -192,7 +225,7 @@ public class ActivityTrackerService extends Service {
     /**
      * Returns the API documentation of all annotated resources
      * for purposes of Swagger documentation.
-     * <p>
+     * <p/>
      * Note:
      * If you do not intend to use Swagger for the documentation
      * of your service API, this method may be removed.
