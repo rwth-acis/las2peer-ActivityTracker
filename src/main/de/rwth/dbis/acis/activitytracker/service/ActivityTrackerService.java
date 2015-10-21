@@ -6,6 +6,9 @@ import java.net.HttpURLConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.ws.rs.*;
 
@@ -15,11 +18,14 @@ import com.google.gson.Gson;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
+import de.rwth.dbis.acis.activitytracker.service.dal.entities.ActivityEx;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
+import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
+import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Service;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
@@ -37,6 +43,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.jooq.SQLDialect;
 
@@ -147,15 +154,53 @@ public class ActivityTrackerService extends Service {
             @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
             @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
         List<Activity> activities = new ArrayList<Activity>();
+        List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
         DALFacade dalFacade = null;
+
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        cm.setMaxTotal(20);
+        CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .build();
         try {
             dalFacade = createConnection();
             Gson gson = new Gson();
-            PageInfo pageInfo = new PageInfo(page, perPage);
+            Pageable pageInfo = new PageInfo(page, perPage);
 
             activities = dalFacade.findActivities(pageInfo);
 
-            return new HttpResponse(gson.toJson(activities), HttpURLConnection.HTTP_OK);
+
+//           List<Thread> httpRequestThreads = new ArrayList<Thread>();
+//            for (Activity activity : activities) {
+//                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+//                activitiesEx.add(activityEx);
+//                if (activity.getDataUrl().length() > 0) {
+//                    HttpGet httpget = new HttpGet(activity.getDataUrl());
+//                    httpRequestThreads.add(new HttpRequestCallable(httpclient, httpget, activityEx.getData()));
+//                }
+//                if (activity.getUserUrl().length() > 0) {
+//                    HttpGet httpget = new HttpGet(activity.getUserUrl());
+//                    httpRequestThreads.add(new HttpRequestCallable(httpclient, httpget, activityEx.getUser()));
+//                }
+//            }
+//
+//            for (Thread httpRequestThread : httpRequestThreads) {
+//                httpRequestThread.start();
+//            }
+//
+//            for (Thread httpRequestThread : httpRequestThreads) {
+//                httpRequestThread.join(1000);
+//            }
+
+            ExecutorService executor = Executors.newCachedThreadPool();
+            Activity activity = activities.get(0);
+            HttpGet httpget = new HttpGet(activity.getDataUrl());
+            Future<String> future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+            ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+            activityEx.setData(future.get());
+            executor.shutdown();
+
+            return new HttpResponse(gson.toJson(activityEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.BAZAARSERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
