@@ -39,7 +39,7 @@ public class Activity extends EntityBase {
         return userUrl;
     }
 
-    private Activity(Builder builder) {
+    protected Activity(Builder builder) {
         this.id = builder.id;
         this.creationTime = builder.creationTime;
         this.activityAction = builder.activityAction;
@@ -54,12 +54,12 @@ public class Activity extends EntityBase {
 
     public static class Builder {
 
-        private int id;
-        private Date creationTime;
-        private ActivityAction activityAction;
-        private String dataUrl;
-        private DataType dataType;
-        private String userUrl;
+        protected int id;
+        protected Date creationTime;
+        protected ActivityAction activityAction;
+        protected String dataUrl;
+        protected DataType dataType;
+        protected String userUrl;
 
         public Builder id(int id) {
             this.id = id;
