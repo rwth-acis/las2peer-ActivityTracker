@@ -15,6 +15,7 @@ import javax.ws.rs.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
@@ -197,9 +198,9 @@ public class ActivityTrackerService extends Service {
             HttpGet httpget = new HttpGet(activity.getDataUrl());
             Future<String> future = executor.submit(new HttpRequestCallable(httpclient, httpget));
             ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
-            activityEx.setData(future.get());
+            JsonParser parser = new JsonParser();
+            activityEx.setData(parser.parse(future.get()));
             executor.shutdown();
-
             return new HttpResponse(gson.toJson(activityEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.BAZAARSERVICE, ErrorCode.UNKNOWN, "");
