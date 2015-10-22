@@ -175,19 +175,24 @@ public class ActivityTrackerService extends Service {
             Future<String> future;
             JsonParser parser = new JsonParser();
             for (Activity activity : activities) {
-                httpget = new HttpGet(activity.getDataUrl());
-                future = executor.submit(new HttpRequestCallable(httpclient, httpget));
                 ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
-                activityEx.setData(parser.parse(future.get()));
-                httpget = new HttpGet(activity.getUserUrl());
-                future = executor.submit(new HttpRequestCallable(httpclient, httpget));
-                activityEx.setUser(parser.parse(future.get()));
+                //TODO check if this runs paralel or if I need to create Threads
+                if (!activity.getDataUrl().isEmpty()) {
+                    httpget = new HttpGet(activity.getDataUrl());
+                    future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                    activityEx.setData(parser.parse(future.get()));
+                }
+                if (!activity.getUserUrl().isEmpty()) {
+                    httpget = new HttpGet(activity.getUserUrl());
+                    future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                    activityEx.setUser(parser.parse(future.get()));
+                }
                 activitiesEx.add(activityEx);
             }
             executor.shutdown();
             return new HttpResponse(gson.toJson(activitiesEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.BAZAARSERVICE, ErrorCode.UNKNOWN, "");
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
             closeConnection(dalFacade);
