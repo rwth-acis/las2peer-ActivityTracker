@@ -200,6 +200,9 @@ public class ActivityTrackerService extends Service {
             ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
             JsonParser parser = new JsonParser();
             activityEx.setData(parser.parse(future.get()));
+            httpget = new HttpGet(activity.getUserUrl());
+            future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+            activityEx.setUser(parser.parse(future.get()));
             executor.shutdown();
             return new HttpResponse(gson.toJson(activityEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
