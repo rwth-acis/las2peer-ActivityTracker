@@ -4,6 +4,7 @@ public enum DataType {
     PROJECT,
     COMPONENT,
     REQUIREMENT,
+    COMMENT,
     ATTACHMENT,
     VOTE
 }
