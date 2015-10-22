@@ -1,25 +1,32 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.ws.rs.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
+import de.rwth.dbis.acis.activitytracker.service.dal.entities.ActivityEx;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
+import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Service;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
@@ -27,13 +34,18 @@ import i5.las2peer.restMapper.RESTMapper;
 import i5.las2peer.restMapper.annotations.Version;
 import i5.las2peer.restMapper.tools.ValidationResult;
 import i5.las2peer.restMapper.tools.XMLCheck;
-import i5.las2peer.security.Context;
-import i5.las2peer.security.UserAgent;
 import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
-import net.minidev.json.JSONObject;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.jooq.SQLDialect;
 
 /**
@@ -85,20 +97,44 @@ public class ActivityTrackerService extends Service {
             @ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
     })
     public HttpResponse validateLogin() {
-        String returnString = "";
+        String returnString = new String();
         //returnString += "You are " + ((UserAgent) getActiveAgent()).getLoginName() + " and your login is valid!";
 
         DALFacade dalFacade = null;
+
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        HttpGet httpGet;
+        CloseableHttpResponse response = null;
         try {
             dalFacade = createConnection();
 
             List<Activity> activities = dalFacade.findActivities(new PageInfo(1, 10));
             System.out.println(activities.size());
 
+            if (activities.size() > 0) {
+                httpGet = new HttpGet(activities.get(0).getDataUrl());
+                response = httpclient.execute(httpGet);
+                System.out.println(response.getStatusLine());
+                HttpEntity entity = response.getEntity();
+
+                StringWriter writer = new StringWriter();
+                IOUtils.copy(entity.getContent(), writer);
+                String entityString = writer.toString();
+                System.out.println(entityString);
+
+                EntityUtils.consume(entity);
+
+                returnString = entityString;
+            }
         } catch (Exception ex) {
             returnString = "Error";
         } finally {
             closeConnection(dalFacade);
+            try {
+                response.close();
+            } catch (Exception ex) {
+                // Could not close the resource?
+            }
         }
 
         return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
@@ -119,17 +155,44 @@ public class ActivityTrackerService extends Service {
             @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
             @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
         List<Activity> activities = new ArrayList<Activity>();
+        List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
         DALFacade dalFacade = null;
+
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        cm.setMaxTotal(20);
+        CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .build();
         try {
             dalFacade = createConnection();
             Gson gson = new Gson();
-            PageInfo pageInfo = new PageInfo(page, perPage);
+            Pageable pageInfo = new PageInfo(page, perPage);
 
             activities = dalFacade.findActivities(pageInfo);
 
-            return new HttpResponse(gson.toJson(activities), HttpURLConnection.HTTP_OK);
+            ExecutorService executor = Executors.newCachedThreadPool();
+            HttpGet httpget;
+            Future<String> future;
+            JsonParser parser = new JsonParser();
+            for (Activity activity : activities) {
+                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+                //TODO check if this runs paralel or if I need to create Threads
+                if (!activity.getDataUrl().isEmpty()) {
+                    httpget = new HttpGet(activity.getDataUrl());
+                    future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                    activityEx.setData(parser.parse(future.get()));
+                }
+                if (!activity.getUserUrl().isEmpty()) {
+                    httpget = new HttpGet(activity.getUserUrl());
+                    future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                    activityEx.setUser(parser.parse(future.get()));
+                }
+                activitiesEx.add(activityEx);
+            }
+            executor.shutdown();
+            return new HttpResponse(gson.toJson(activitiesEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.BAZAARSERVICE, ErrorCode.UNKNOWN, "");
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
             closeConnection(dalFacade);
@@ -192,7 +255,7 @@ public class ActivityTrackerService extends Service {
     /**
      * Returns the API documentation of all annotated resources
      * for purposes of Swagger documentation.
-     * <p>
+     * <p/>
      * Note:
      * If you do not intend to use Swagger for the documentation
      * of your service API, this method may be removed.
