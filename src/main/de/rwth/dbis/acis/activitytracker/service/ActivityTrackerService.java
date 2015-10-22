@@ -170,41 +170,22 @@ public class ActivityTrackerService extends Service {
 
             activities = dalFacade.findActivities(pageInfo);
 
-
-//           List<Thread> httpRequestThreads = new ArrayList<Thread>();
-//            for (Activity activity : activities) {
-//                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
-//                activitiesEx.add(activityEx);
-//                if (activity.getDataUrl().length() > 0) {
-//                    HttpGet httpget = new HttpGet(activity.getDataUrl());
-//                    httpRequestThreads.add(new HttpRequestCallable(httpclient, httpget, activityEx.getData()));
-//                }
-//                if (activity.getUserUrl().length() > 0) {
-//                    HttpGet httpget = new HttpGet(activity.getUserUrl());
-//                    httpRequestThreads.add(new HttpRequestCallable(httpclient, httpget, activityEx.getUser()));
-//                }
-//            }
-//
-//            for (Thread httpRequestThread : httpRequestThreads) {
-//                httpRequestThread.start();
-//            }
-//
-//            for (Thread httpRequestThread : httpRequestThreads) {
-//                httpRequestThread.join(1000);
-//            }
-
             ExecutorService executor = Executors.newCachedThreadPool();
-            Activity activity = activities.get(0);
-            HttpGet httpget = new HttpGet(activity.getDataUrl());
-            Future<String> future = executor.submit(new HttpRequestCallable(httpclient, httpget));
-            ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+            HttpGet httpget;
+            Future<String> future;
             JsonParser parser = new JsonParser();
-            activityEx.setData(parser.parse(future.get()));
-            httpget = new HttpGet(activity.getUserUrl());
-            future = executor.submit(new HttpRequestCallable(httpclient, httpget));
-            activityEx.setUser(parser.parse(future.get()));
+            for (Activity activity : activities) {
+                httpget = new HttpGet(activity.getDataUrl());
+                future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+                activityEx.setData(parser.parse(future.get()));
+                httpget = new HttpGet(activity.getUserUrl());
+                future = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                activityEx.setUser(parser.parse(future.get()));
+                activitiesEx.add(activityEx);
+            }
             executor.shutdown();
-            return new HttpResponse(gson.toJson(activityEx), HttpURLConnection.HTTP_OK);
+            return new HttpResponse(gson.toJson(activitiesEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.BAZAARSERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
