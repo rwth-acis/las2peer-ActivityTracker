@@ -51,7 +51,7 @@ import org.jooq.SQLDialect;
 /**
  * LAS2peer Activity Service
  */
-@Path("/activitytracker")
+@Path("/activities")
 @Version("0.1")
 @Api
 @SwaggerDefinition(
