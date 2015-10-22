@@ -7,9 +7,8 @@ import java.util.Date;
 
 public class ActivityEx extends Activity {
 
-    private String data;
-
-    private String user;
+    private Object data;
+    private Object user;
 
     private ActivityEx(BuilderEx builderEx) {
         super(builderEx);
@@ -17,19 +16,19 @@ public class ActivityEx extends Activity {
         this.user = builderEx.user;
     }
 
-    public String getData() {
+    public Object getData() {
         return data;
     }
 
-    public void setData(String data) {
+    public void setData(Object data) {
         this.data = data;
     }
 
-    public String getUser() {
+    public Object getUser() {
         return user;
     }
 
-    public void setUser(String user) {
+    public void setUser(Object user) {
         this.user = user;
     }
 
@@ -39,8 +38,8 @@ public class ActivityEx extends Activity {
 
     public static class BuilderEx extends Builder {
 
-        private String data;
-        private String user;
+        private Object data;
+        private Object user;
 
         public BuilderEx() {
             super();
@@ -52,6 +51,16 @@ public class ActivityEx extends Activity {
             dataUrl(activity.getDataUrl());
             dataType(activity.getDataType());
             userUrl(activity.getUserUrl());
+            return this;
+        }
+
+        public BuilderEx data(Object data) {
+            this.data = data;
+            return this;
+        }
+
+        public BuilderEx user(Object user) {
+            this.user = user;
             return this;
         }
 
