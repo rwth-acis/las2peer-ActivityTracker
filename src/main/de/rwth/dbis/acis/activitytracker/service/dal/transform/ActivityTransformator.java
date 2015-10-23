@@ -60,11 +60,14 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
     public Collection<? extends SortField<?>> getSortFields(Pageable.SortDirection sortDirection) {
         switch (sortDirection) {
             case DEFAULT:
-                return Arrays.asList(ACTIVITY.CREATION_TIME.asc());
+                return Arrays.asList(ACTIVITY.CREATION_TIME.desc(),
+                        ACTIVITY.ID.desc());
             case ASC:
-                return Arrays.asList(ACTIVITY.CREATION_TIME.asc());
+                return Arrays.asList(ACTIVITY.CREATION_TIME.asc(),
+                        ACTIVITY.ID.asc());
             case DESC:
-                return Arrays.asList(ACTIVITY.CREATION_TIME.desc());
+                return Arrays.asList(ACTIVITY.CREATION_TIME.desc(),
+                        ACTIVITY.ID.desc());
         }
         return null;
     }
