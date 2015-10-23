@@ -28,6 +28,7 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
     @Override
     public Activity mapToEntity(ActivityRecord record) {
         return Activity.getBuilder()
+                .id(record.getId())
                 .creationTime(record.getCreationTime())
                 .activityAction(ActivityAction.valueOf(record.getActivityAction()))
                 .dataUrl(record.getDataUrl())

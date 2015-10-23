@@ -46,6 +46,7 @@ public class ActivityEx extends Activity {
         }
 
         public BuilderEx activity(Activity activity) {
+            id(activity.getId());
             creationTime(activity.getCreationTime());
             activityAction(activity.getActivityAction());
             dataUrl(activity.getDataUrl());
