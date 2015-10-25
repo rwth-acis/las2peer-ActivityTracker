@@ -49,12 +49,12 @@ import java.util.concurrent.Future;
  */
 @Path("/activities")
 @Version("0.1")
-@Api
+@Api(value = "/activities", description = "Activities resource")
 @SwaggerDefinition(
         info = @Info(
                 title = "LAS2peer Activity Service",
                 version = "0.1",
-                description = "An activity tracker for LAS2peer services.",
+                description = "An activity tracker for LAS2peer and other web services.",
                 termsOfService = "http://requirements-bazaar.org",
                 contact = @Contact(
                         name = "Requirements Bazaar Dev Team",
