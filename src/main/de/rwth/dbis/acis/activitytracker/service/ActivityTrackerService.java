@@ -26,15 +26,20 @@ import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
+import org.apache.http.Header;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicNameValuePair;
 import org.jooq.SQLDialect;
 
 import javax.ws.rs.*;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -97,6 +102,10 @@ public class ActivityTrackerService extends Service {
     public HttpResponse getActivities(
             @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
             @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
+            //@ApiParam(value = "User access token", required = false) @HeaderParam("access_token") String access_token) {
+        //TODO Use access_token from header, at the moment WebConnector does not work with this
+        String accessToken = "";
+
         List<Activity> activities = new ArrayList<Activity>();
         List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
         DALFacade dalFacade = null;
@@ -119,14 +128,25 @@ public class ActivityTrackerService extends Service {
             JsonParser parser = new JsonParser();
             for (Activity activity : activities) {
                 ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+                List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
                 //TODO check if this runs paralel or if I need to create Threads
                 if (!activity.getDataUrl().isEmpty()) {
-                    httpget = new HttpGet(activity.getDataUrl());
+                    URIBuilder uriBuilder = new URIBuilder(activity.getDataUrl());
+                    if (!accessToken.isEmpty()) {
+                        uriBuilder.setParameter("access_token", accessToken);
+                    }
+                    URI uri = uriBuilder.build();
+                    httpget = new HttpGet(uri);
                     future = executor.submit(new HttpRequestCallable(httpclient, httpget));
                     activityEx.setData(parser.parse(future.get()));
                 }
                 if (!activity.getUserUrl().isEmpty()) {
-                    httpget = new HttpGet(activity.getUserUrl());
+                    URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
+                    if (!accessToken.isEmpty()) {
+                        uriBuilder.setParameter("access_token", accessToken);
+                    }
+                    URI uri = uriBuilder.build();
+                    httpget = new HttpGet(uri);
                     future = executor.submit(new HttpRequestCallable(httpclient, httpget));
                     activityEx.setUser(parser.parse(future.get()));
                 }
