@@ -18,6 +18,7 @@ import i5.las2peer.api.Service;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
 import i5.las2peer.restMapper.RESTMapper;
+import i5.las2peer.restMapper.annotations.ContentParam;
 import i5.las2peer.restMapper.annotations.Version;
 import i5.las2peer.restMapper.tools.ValidationResult;
 import i5.las2peer.restMapper.tools.XMLCheck;
@@ -133,6 +134,34 @@ public class ActivityTrackerService extends Service {
             }
             executor.shutdown();
             return new HttpResponse(gson.toJson(activitiesEx), HttpURLConnection.HTTP_OK);
+        } catch (Exception ex) {
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
+        } finally {
+            closeConnection(dalFacade);
+        }
+    }
+
+    @POST
+    @Path("/")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "This method allows to create an activity",
+            notes = "Returns the created activity")
+    @ApiResponses(value = {
+            @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
+            @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
+    })
+    public HttpResponse createActivity(@ApiParam(value = "Activity" +
+            " entity as JSON", required = true) @ContentParam String activity) {
+        Gson gson = new Gson();
+        DALFacade dalFacade = null;
+        Activity activityToCreate = gson.fromJson(activity, Activity.class);
+        //TODO validate activity
+        try {
+            dalFacade = createConnection();
+            Activity createdActivity = dalFacade.createActivity(activityToCreate);
+            return new HttpResponse(gson.toJson(createdActivity), HttpURLConnection.HTTP_CREATED);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
