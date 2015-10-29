@@ -98,11 +98,8 @@ public class ActivityTrackerService extends Service {
     //TODO add filter
     public HttpResponse getActivities(
             @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
-            @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
-        //@ApiParam(value = "User access token", required = false) @HeaderParam("access_token") String access_token) {
-        //TODO Use access_token from header, at the moment WebConnector does not work with this
-        String accessToken = "";
-
+            @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage,
+            @ApiParam(value = "User access token", required = false) @DefaultValue("") @QueryParam("access_token") String accessToken) {
         List<Activity> activities = new ArrayList<Activity>();
         List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
         DALFacade dalFacade = null;
