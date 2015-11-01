@@ -22,6 +22,7 @@ import i5.las2peer.restMapper.annotations.ContentParam;
 import i5.las2peer.restMapper.annotations.Version;
 import i5.las2peer.restMapper.tools.ValidationResult;
 import i5.las2peer.restMapper.tools.XMLCheck;
+import i5.las2peer.security.Context;
 import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
@@ -41,7 +42,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -98,14 +101,12 @@ public class ActivityTrackerService extends Service {
     //TODO add filter
     public HttpResponse getActivities(
             @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
-            @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage) {
-        //@ApiParam(value = "User access token", required = false) @HeaderParam("access_token") String access_token) {
-        //TODO Use access_token from header, at the moment WebConnector does not work with this
-        String accessToken = "";
-
+            @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage,
+            @ApiParam(value = "User access token", required = false) @DefaultValue("") @QueryParam("access_token") String accessToken) {
         List<Activity> activities = new ArrayList<Activity>();
         List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
         DALFacade dalFacade = null;
+        int getObjectCount = 0;
 
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
         cm.setMaxTotal(20);
@@ -115,40 +116,20 @@ public class ActivityTrackerService extends Service {
         try {
             dalFacade = createConnection();
             Gson gson = new Gson();
-            Pageable pageInfo = new PageInfo(page, perPage);
-
-            activities = dalFacade.findActivities(pageInfo);
-
             ExecutorService executor = Executors.newCachedThreadPool();
-            HttpGet httpget;
-            Future<String> future;
-            JsonParser parser = new JsonParser();
-            for (Activity activity : activities) {
-                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
-                //TODO check if this runs paralel or if I need to create Threads
-                if (!activity.getDataUrl().isEmpty()) {
-                    URIBuilder uriBuilder = new URIBuilder(activity.getDataUrl());
-                    if (!accessToken.isEmpty()) {
-                        uriBuilder.setParameter("access_token", accessToken);
-                    }
-                    URI uri = uriBuilder.build();
-                    httpget = new HttpGet(uri);
-                    future = executor.submit(new HttpRequestCallable(httpclient, httpget));
-                    activityEx.setData(parser.parse(future.get()));
-                }
-                if (!activity.getUserUrl().isEmpty()) {
-                    URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
-                    if (!accessToken.isEmpty()) {
-                        uriBuilder.setParameter("access_token", accessToken);
-                    }
-                    URI uri = uriBuilder.build();
-                    httpget = new HttpGet(uri);
-                    future = executor.submit(new HttpRequestCallable(httpclient, httpget));
-                    activityEx.setUser(parser.parse(future.get()));
-                }
-                activitiesEx.add(activityEx);
+
+            while (activitiesEx.size() < perPage && getObjectCount < 5) {
+                Pageable pageInfo = new PageInfo(page, perPage);
+                activities = dalFacade.findActivities(pageInfo);
+                getObjectCount++;
+                page++;
+                activitiesEx.addAll(getObjectBodies(httpclient, executor, accessToken, activities));
             }
+
             executor.shutdown();
+            if (activitiesEx.size() > perPage) {
+                activitiesEx = activitiesEx.subList(0, perPage);
+            }
             return new HttpResponse(gson.toJson(activitiesEx), HttpURLConnection.HTTP_OK);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
@@ -156,6 +137,63 @@ public class ActivityTrackerService extends Service {
         } finally {
             closeConnection(dalFacade);
         }
+    }
+
+    private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String accessToken,
+                                             List<Activity> activities) throws Exception {
+        List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
+        Map<Integer, Future<String>> dataFutures = new HashMap<Integer, Future<String>>();
+        Map<Integer, Future<String>> userFutures = new HashMap<Integer, Future<String>>();
+        JsonParser parser = new JsonParser();
+
+        for (int i = 0; i < activities.size(); i++) {
+            Activity activity = activities.get(i);
+            if (!activity.getDataUrl().isEmpty()) {
+                URIBuilder uriBuilder = new URIBuilder(activity.getDataUrl());
+                if (!accessToken.isEmpty()) {
+                    uriBuilder.setParameter("access_token", accessToken);
+                }
+                URI uri = uriBuilder.build();
+                HttpGet httpget = new HttpGet(uri);
+                dataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
+                //activityEx.setData(parser.parse(future.get()));
+            }
+            if (!activity.getUserUrl().isEmpty()) {
+                URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
+                if (!accessToken.isEmpty()) {
+                    uriBuilder.setParameter("access_token", accessToken);
+                }
+                URI uri = uriBuilder.build();
+                HttpGet httpget = new HttpGet(uri);
+                userFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
+                //activityEx.setUser(parser.parse(future.get()));
+            }
+        }
+
+        for (int i = 0; i < activities.size(); i++) {
+            try {
+                Activity activity = activities.get(i);
+                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+                Future<String> dataFuture = dataFutures.get(activity.getId());
+                if (dataFuture != null) {
+                    activityEx.setData(parser.parse(dataFuture.get()));
+                }
+                Future<String> userFuture = userFutures.get(activity.getId());
+                if (userFuture != null) {
+                    activityEx.setUser(parser.parse(userFuture.get()));
+                }
+                activitiesEx.add(activityEx);
+            } catch (Exception ex) {
+                Throwable exCause = ex.getCause();
+                if (exCause instanceof ActivityTrackerException &&
+                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
+                    Context.logMessage(this, "Object not visible for user token or anonymous. Skip object.");
+                } else {
+                    throw ex;
+                }
+            }
+        }
+        return activitiesEx;
     }
 
     @POST
