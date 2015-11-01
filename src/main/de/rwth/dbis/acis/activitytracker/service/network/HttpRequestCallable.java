@@ -30,7 +30,7 @@ public class HttpRequestCallable implements Callable {
     }
 
     @Override
-    public Object call() throws Exception {
+    public Object call() throws Exception, ActivityTrackerException {
         String responseBody = new String();
         CloseableHttpResponse response = null;
         try {
@@ -38,8 +38,12 @@ public class HttpRequestCallable implements Callable {
 
             HttpEntity entity = response.getEntity();
             StatusLine statusLine = response.getStatusLine();
+            if (statusLine.getStatusCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                ExceptionHandler.getInstance().throwException(ExceptionLocation.NETWORK, ErrorCode.AUTHORIZATION,
+                        "User is not authorized for this request");
+            }
             if (statusLine.getStatusCode() != HttpURLConnection.HTTP_OK) {
-                ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITIESERVICE, ErrorCode.NETWORK_PROBLEM,
+                ExceptionHandler.getInstance().throwException(ExceptionLocation.NETWORK, ErrorCode.NETWORK_PROBLEM,
                         "Error while trying to receive activity content");
             }
             if (entity != null) {
@@ -50,7 +54,7 @@ public class HttpRequestCallable implements Callable {
         } catch (ActivityTrackerException atEx) {
             throw atEx;
         } catch (Exception ex) {
-            throw ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            throw ExceptionHandler.getInstance().convert(ex, ExceptionLocation.NETWORK, ErrorCode.UNKNOWN, "");
         } finally {
             if (response != null) {
                 response.close();
