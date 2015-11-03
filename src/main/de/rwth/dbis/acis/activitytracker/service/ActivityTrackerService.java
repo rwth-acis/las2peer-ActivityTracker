@@ -156,7 +156,6 @@ public class ActivityTrackerService extends Service {
                 URI uri = uriBuilder.build();
                 HttpGet httpget = new HttpGet(uri);
                 dataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
-                //activityEx.setData(parser.parse(future.get()));
             }
             if (!activity.getUserUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
@@ -166,7 +165,6 @@ public class ActivityTrackerService extends Service {
                 URI uri = uriBuilder.build();
                 HttpGet httpget = new HttpGet(uri);
                 userFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
-                //activityEx.setUser(parser.parse(future.get()));
             }
         }
 
