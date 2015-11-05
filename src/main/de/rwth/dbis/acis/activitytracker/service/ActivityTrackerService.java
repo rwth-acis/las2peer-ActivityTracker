@@ -148,7 +148,7 @@ public class ActivityTrackerService extends Service {
 
         for (int i = 0; i < activities.size(); i++) {
             Activity activity = activities.get(i);
-            if (!activity.getDataUrl().isEmpty()) {
+            if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getDataUrl());
                 if (!accessToken.isEmpty()) {
                     uriBuilder.setParameter("access_token", accessToken);
@@ -157,7 +157,7 @@ public class ActivityTrackerService extends Service {
                 HttpGet httpget = new HttpGet(uri);
                 dataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
             }
-            if (!activity.getUserUrl().isEmpty()) {
+            if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
                 if (!accessToken.isEmpty()) {
                     uriBuilder.setParameter("access_token", accessToken);

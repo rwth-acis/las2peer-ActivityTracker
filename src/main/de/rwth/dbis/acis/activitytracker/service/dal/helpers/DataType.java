@@ -6,5 +6,7 @@ public enum DataType {
     REQUIREMENT,
     COMMENT,
     ATTACHMENT,
-    VOTE
+    VOTE,
+    FOLLOW,
+    DEVELOP
 }
