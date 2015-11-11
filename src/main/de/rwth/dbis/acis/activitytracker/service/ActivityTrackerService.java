@@ -186,6 +186,9 @@ public class ActivityTrackerService extends Service {
                 if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
                     Context.logMessage(this, "Object not visible for user token or anonymous. Skip object.");
+                } else if (exCause instanceof ActivityTrackerException &&
+                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
+                    Context.logMessage(this, "Resource not found. Skip object.");
                 } else {
                     throw ex;
                 }
