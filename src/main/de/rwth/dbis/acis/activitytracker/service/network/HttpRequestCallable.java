@@ -42,6 +42,10 @@ public class HttpRequestCallable implements Callable {
                 ExceptionHandler.getInstance().throwException(ExceptionLocation.NETWORK, ErrorCode.AUTHORIZATION,
                         "User is not authorized for this request");
             }
+            if (statusLine.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                ExceptionHandler.getInstance().throwException(ExceptionLocation.NETWORK, ErrorCode.NOT_FOUND,
+                        "Resource not found");
+            }
             if (statusLine.getStatusCode() != HttpURLConnection.HTTP_OK) {
                 ExceptionHandler.getInstance().throwException(ExceptionLocation.NETWORK, ErrorCode.NETWORK_PROBLEM,
                         "Error while trying to receive activity content");
