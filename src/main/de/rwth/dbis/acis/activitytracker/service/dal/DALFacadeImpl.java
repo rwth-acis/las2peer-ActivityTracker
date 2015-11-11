@@ -1,6 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service.dal;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
+import de.rwth.dbis.acis.activitytracker.service.dal.helpers.ActivityAction;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityRepository;
 import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityRepositoryImpl;
@@ -10,6 +11,7 @@ import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import java.sql.Connection;
+import java.util.Iterator;
 import java.util.List;
 
 public class DALFacadeImpl implements DALFacade {
@@ -35,7 +37,16 @@ public class DALFacadeImpl implements DALFacade {
 
     @Override
     public List<Activity> findActivities(Pageable pageable) throws ActivityTrackerException{
-        return activityRepository.findAll(pageable);
+        List<Activity> activities = activityRepository.findAll(pageable);
+        // filter deleted activities
+        Iterator<Activity> iterator = activities.iterator();
+        while (iterator.hasNext()) {
+            Activity activity = iterator.next();
+            if (activity.getActivityAction() == ActivityAction.DELETE) {
+                iterator.remove();
+            }
+        }
+        return activities;
     }
 
     @Override
