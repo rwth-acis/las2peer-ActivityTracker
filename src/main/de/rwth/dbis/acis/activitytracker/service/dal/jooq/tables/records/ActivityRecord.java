@@ -30,87 +30,87 @@ import org.jooq.impl.UpdatableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class ActivityRecord extends UpdatableRecordImpl<ActivityRecord> implements Record6<Integer, Timestamp, String, String, String, String> {
 
-	private static final long serialVersionUID = -220551052;
+	private static final long serialVersionUID = 554139658;
 
 	/**
-	 * Setter for <code>activitytracker.activity.Id</code>.
+	 * Setter for <code>reqbaztrack.activity.Id</code>.
 	 */
 	public void setId(Integer value) {
 		setValue(0, value);
 	}
 
 	/**
-	 * Getter for <code>activitytracker.activity.Id</code>.
+	 * Getter for <code>reqbaztrack.activity.Id</code>.
 	 */
 	public Integer getId() {
 		return (Integer) getValue(0);
 	}
 
 	/**
-	 * Setter for <code>activitytracker.activity.creation_time</code>.
+	 * Setter for <code>reqbaztrack.activity.creation_time</code>.
 	 */
 	public void setCreationTime(Timestamp value) {
 		setValue(1, value);
 	}
 
 	/**
-	 * Getter for <code>activitytracker.activity.creation_time</code>.
+	 * Getter for <code>reqbaztrack.activity.creation_time</code>.
 	 */
 	public Timestamp getCreationTime() {
 		return (Timestamp) getValue(1);
 	}
 
 	/**
-	 * Setter for <code>activitytracker.activity.activity_action</code>.
+	 * Setter for <code>reqbaztrack.activity.activity_action</code>.
 	 */
 	public void setActivityAction(String value) {
 		setValue(2, value);
 	}
 
 	/**
-	 * Getter for <code>activitytracker.activity.activity_action</code>.
+	 * Getter for <code>reqbaztrack.activity.activity_action</code>.
 	 */
 	public String getActivityAction() {
 		return (String) getValue(2);
 	}
 
 	/**
-	 * Setter for <code>activitytracker.activity.data_url</code>.
+	 * Setter for <code>reqbaztrack.activity.data_url</code>.
 	 */
 	public void setDataUrl(String value) {
 		setValue(3, value);
 	}
 
 	/**
-	 * Getter for <code>activitytracker.activity.data_url</code>.
+	 * Getter for <code>reqbaztrack.activity.data_url</code>.
 	 */
 	public String getDataUrl() {
 		return (String) getValue(3);
 	}
 
 	/**
-	 * Setter for <code>activitytracker.activity.data_type</code>.
+	 * Setter for <code>reqbaztrack.activity.data_type</code>.
 	 */
 	public void setDataType(String value) {
 		setValue(4, value);
 	}
 
 	/**
-	 * Getter for <code>activitytracker.activity.data_type</code>.
+	 * Getter for <code>reqbaztrack.activity.data_type</code>.
 	 */
 	public String getDataType() {
 		return (String) getValue(4);
 	}
 
 	/**
-	 * Setter for <code>activitytracker.activity.user_url</code>.
+	 * Setter for <code>reqbaztrack.activity.user_url</code>.
 	 */
 	public void setUserUrl(String value) {
 		setValue(5, value);
 	}
 
 	/**
-	 * Getter for <code>activitytracker.activity.user_url</code>.
+	 * Getter for <code>reqbaztrack.activity.user_url</code>.
 	 */
 	public String getUserUrl() {
 		return (String) getValue(5);
