@@ -1,8 +1,5 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.ActivityAction;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.DataType;
-
 import java.util.Date;
 
 public class ActivityEx extends Activity {
@@ -72,7 +69,7 @@ public class ActivityEx extends Activity {
         }
 
         @Override
-        public BuilderEx activityAction(ActivityAction activityAction) {
+        public BuilderEx activityAction(String activityAction) {
             this.activityAction = activityAction;
             return this;
         }
@@ -84,7 +81,7 @@ public class ActivityEx extends Activity {
         }
 
         @Override
-        public BuilderEx dataType(DataType dataType) {
+        public BuilderEx dataType(String dataType) {
             this.dataType = dataType;
             return this;
         }

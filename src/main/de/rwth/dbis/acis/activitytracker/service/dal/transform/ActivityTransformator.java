@@ -2,7 +2,6 @@ package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.*;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.DataType;
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
 import org.jooq.*;
 
@@ -18,9 +17,9 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
     public ActivityRecord createRecord(Activity entity) {
         ActivityRecord activityRecord = new ActivityRecord();
         activityRecord.setCreationTime(new java.sql.Timestamp(entity.getCreationTime().getTime()));
-        activityRecord.setActivityAction(entity.getActivityAction().toString());
+        activityRecord.setActivityAction(entity.getActivityAction());
         activityRecord.setDataUrl(entity.getDataUrl());
-        activityRecord.setDataType(entity.getDataType().toString());
+        activityRecord.setDataType(entity.getDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
         return activityRecord;
     }
@@ -30,9 +29,9 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
         return Activity.getBuilder()
                 .id(record.getId())
                 .creationTime(record.getCreationTime())
-                .activityAction(ActivityAction.valueOf(record.getActivityAction()))
+                .activityAction(record.getActivityAction())
                 .dataUrl(record.getDataUrl())
-                .dataType(DataType.valueOf(record.getDataType()))
+                .dataType(record.getDataType())
                 .userUrl(record.getUserUrl())
                 .build();
     }

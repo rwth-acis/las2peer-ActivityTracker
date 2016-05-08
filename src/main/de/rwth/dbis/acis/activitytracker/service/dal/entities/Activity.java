@@ -1,17 +1,14 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.ActivityAction;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.DataType;
-
 import java.util.Date;
 
 public class Activity extends EntityBase {
 
     private final int id;
     private final Date creationTime;
-    private final ActivityAction activityAction;
+    private final String activityAction;
     private final String dataUrl;
-    private final DataType dataType;
+    private final String dataType;
     private final String userUrl;
 
     @Override
@@ -23,7 +20,7 @@ public class Activity extends EntityBase {
         return creationTime;
     }
 
-    public ActivityAction getActivityAction() {
+    public String getActivityAction() {
         return activityAction;
     }
 
@@ -31,7 +28,7 @@ public class Activity extends EntityBase {
         return dataUrl;
     }
 
-    public DataType getDataType() {
+    public String getDataType() {
         return dataType;
     }
 
@@ -56,9 +53,9 @@ public class Activity extends EntityBase {
 
         protected int id;
         protected Date creationTime;
-        protected ActivityAction activityAction;
+        protected String activityAction;
         protected String dataUrl;
-        protected DataType dataType;
+        protected String dataType;
         protected String userUrl;
 
         public Builder id(int id) {
@@ -71,7 +68,7 @@ public class Activity extends EntityBase {
             return this;
         }
 
-        public Builder activityAction(ActivityAction activityAction) {
+        public Builder activityAction(String activityAction) {
             this.activityAction = activityAction;
             return this;
         }
@@ -81,7 +78,7 @@ public class Activity extends EntityBase {
             return this;
         }
 
-        public Builder dataType(DataType dataType) {
+        public Builder dataType(String dataType) {
             this.dataType = dataType;
             return this;
         }
