@@ -4,7 +4,6 @@
             # it starts a LAS2peer node providing the service 'de.rwth.dbis.acis.activitytracker.service.AcivityTrackerService' of this project
             # pls execute it from the root folder of your deployment, e. g. ./bin/start_network.sh
 
-            java -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9011 uploadStartupDirectory\(\'etc/startup\'\)
-            startService\(\'de.rwth.dbis.acis.activitytracker.service.AcivityTrackerService@0.1\'\) startWebConnector interactive
+            java -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9011 uploadStartupDirectory\(\'etc/startup\'\) startService\(\'de.rwth.dbis.acis.activitytracker.service.AcivityTrackerService@0.1\',  \'SampleServicePass\'\) startWebConnector interactive
 
         
