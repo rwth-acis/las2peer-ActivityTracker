@@ -21,7 +21,7 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
         activityRecord.setDataUrl(entity.getDataUrl());
         activityRecord.setDataType(entity.getDataType());
         activityRecord.setDataFrontendUrl(entity.getDataFrontendUrl());
-        activityRecord.setParentDataUrl(entity.getDataFrontendUrl());
+        activityRecord.setParentDataUrl(entity.getParentDataUrl());
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
         return activityRecord;
