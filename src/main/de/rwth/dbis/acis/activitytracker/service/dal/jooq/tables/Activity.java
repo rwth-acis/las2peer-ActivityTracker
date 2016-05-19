@@ -35,7 +35,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Activity extends TableImpl<ActivityRecord> {
 
-	private static final long serialVersionUID = 239972460;
+	private static final long serialVersionUID = 1527543309;
 
 	/**
 	 * The reference instance of <code>reqbaztrack.activity</code>
@@ -74,6 +74,21 @@ public class Activity extends TableImpl<ActivityRecord> {
 	 * The column <code>reqbaztrack.activity.data_type</code>.
 	 */
 	public final TableField<ActivityRecord, String> DATA_TYPE = createField("data_type", org.jooq.impl.SQLDataType.VARCHAR.length(255).nullable(false), this, "");
+
+	/**
+	 * The column <code>reqbaztrack.activity.data_frontend_url</code>.
+	 */
+	public final TableField<ActivityRecord, String> DATA_FRONTEND_URL = createField("data_frontend_url", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
+
+	/**
+	 * The column <code>reqbaztrack.activity.parent_data_url</code>.
+	 */
+	public final TableField<ActivityRecord, String> PARENT_DATA_URL = createField("parent_data_url", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
+
+	/**
+	 * The column <code>reqbaztrack.activity.parent_data_type</code>.
+	 */
+	public final TableField<ActivityRecord, String> PARENT_DATA_TYPE = createField("parent_data_type", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
 
 	/**
 	 * The column <code>reqbaztrack.activity.user_url</code>.
