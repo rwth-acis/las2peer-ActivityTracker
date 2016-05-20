@@ -20,6 +20,9 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
         activityRecord.setActivityAction(entity.getActivityAction());
         activityRecord.setDataUrl(entity.getDataUrl());
         activityRecord.setDataType(entity.getDataType());
+        activityRecord.setDataFrontendUrl(entity.getDataFrontendUrl());
+        activityRecord.setParentDataUrl(entity.getParentDataUrl());
+        activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
         return activityRecord;
     }
@@ -32,6 +35,9 @@ public class ActivityTransformator implements Transformator<Activity, ActivityRe
                 .activityAction(record.getActivityAction())
                 .dataUrl(record.getDataUrl())
                 .dataType(record.getDataType())
+                .dataFrontendUrl(record.getDataFrontendUrl())
+                .parentDataUrl(record.getParentDataUrl())
+                .parentDataType(record.getParentDataType())
                 .userUrl(record.getUserUrl())
                 .build();
     }
