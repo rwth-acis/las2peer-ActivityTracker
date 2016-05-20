@@ -143,6 +143,7 @@ public class ActivityTrackerService extends Service {
                                              List<Activity> activities) throws Exception {
         List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
         Map<Integer, Future<String>> dataFutures = new HashMap<Integer, Future<String>>();
+        Map<Integer, Future<String>> parentDataFutures = new HashMap<Integer, Future<String>>();
         Map<Integer, Future<String>> userFutures = new HashMap<Integer, Future<String>>();
         JsonParser parser = new JsonParser();
 
@@ -156,6 +157,15 @@ public class ActivityTrackerService extends Service {
                 URI uri = uriBuilder.build();
                 HttpGet httpget = new HttpGet(uri);
                 dataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
+            }
+            if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
+                URIBuilder uriBuilder = new URIBuilder(activity.getParentDataUrl());
+                if (!accessToken.isEmpty()) {
+                    uriBuilder.setParameter("access_token", accessToken);
+                }
+                URI uri = uriBuilder.build();
+                HttpGet httpget = new HttpGet(uri);
+                parentDataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
             }
             if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
@@ -175,6 +185,10 @@ public class ActivityTrackerService extends Service {
                 Future<String> dataFuture = dataFutures.get(activity.getId());
                 if (dataFuture != null) {
                     activityEx.setData(parser.parse(dataFuture.get()));
+                }
+                Future<String> parentDataFuture = parentDataFutures.get(activity.getId());
+                if (parentDataFuture != null) {
+                    activityEx.setParentData(parser.parse(parentDataFuture.get()));
                 }
                 Future<String> userFuture = userFutures.get(activity.getId());
                 if (userFuture != null) {

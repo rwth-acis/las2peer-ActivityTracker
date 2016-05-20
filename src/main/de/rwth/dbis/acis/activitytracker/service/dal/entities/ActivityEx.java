@@ -1,18 +1,17 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.ActivityAction;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.DataType;
-
 import java.util.Date;
 
 public class ActivityEx extends Activity {
 
     private Object data;
+    private Object parentData;
     private Object user;
 
     private ActivityEx(BuilderEx builderEx) {
         super(builderEx);
         this.data = builderEx.data;
+        this.parentData = builderEx.parentData;
         this.user = builderEx.user;
     }
 
@@ -22,6 +21,14 @@ public class ActivityEx extends Activity {
 
     public void setData(Object data) {
         this.data = data;
+    }
+
+    public Object getParentData() {
+        return parentData;
+    }
+
+    public void setParentData(Object parentData) {
+        this.parentData = parentData;
     }
 
     public Object getUser() {
@@ -39,6 +46,7 @@ public class ActivityEx extends Activity {
     public static class BuilderEx extends Builder {
 
         private Object data;
+        private Object parentData;
         private Object user;
 
         public BuilderEx() {
@@ -51,12 +59,20 @@ public class ActivityEx extends Activity {
             activityAction(activity.getActivityAction());
             dataUrl(activity.getDataUrl());
             dataType(activity.getDataType());
+            dataFrontendUrl(activity.getDataFrontendUrl());
+            parentDataUrl(activity.getParentDataUrl());
+            parentDataType(activity.getParentDataType());
             userUrl(activity.getUserUrl());
             return this;
         }
 
         public BuilderEx data(Object data) {
             this.data = data;
+            return this;
+        }
+
+        public BuilderEx parentData(Object parentData) {
+            this.parentData = parentData;
             return this;
         }
 
@@ -72,7 +88,7 @@ public class ActivityEx extends Activity {
         }
 
         @Override
-        public BuilderEx activityAction(ActivityAction activityAction) {
+        public BuilderEx activityAction(String activityAction) {
             this.activityAction = activityAction;
             return this;
         }
@@ -84,8 +100,26 @@ public class ActivityEx extends Activity {
         }
 
         @Override
-        public BuilderEx dataType(DataType dataType) {
+        public BuilderEx dataType(String dataType) {
             this.dataType = dataType;
+            return this;
+        }
+
+        @Override
+        public Builder dataFrontendUrl(String dataFrontendUrl) {
+            this.dataFrontendUrl = dataFrontendUrl;
+            return this;
+        }
+
+        @Override
+        public Builder parentDataUrl(String parentDataUrl) {
+            this.parentDataUrl = parentDataUrl;
+            return this;
+        }
+
+        @Override
+        public Builder parentDataType(String parentDataType) {
+            this.parentDataType = parentDataType;
             return this;
         }
 

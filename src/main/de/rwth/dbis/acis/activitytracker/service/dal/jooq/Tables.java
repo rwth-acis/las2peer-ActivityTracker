@@ -10,7 +10,7 @@ import javax.annotation.Generated;
 
 
 /**
- * Convenience access to all tables in activitytracker
+ * Convenience access to all tables in reqbaztrack
  */
 @Generated(
 	value = {
@@ -23,7 +23,7 @@ import javax.annotation.Generated;
 public class Tables {
 
 	/**
-	 * The table activitytracker.activity
+	 * The table reqbaztrack.activity
 	 */
 	public static final Activity ACTIVITY = de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
 }

@@ -3,7 +3,7 @@
 	<!-- Configure the database connection here -->
 	<jdbc>
 		<driver>com.mysql.jdbc.Driver</driver>
-		<url>jdbc:mysql://localhost:3306/activitytracker</url>
+		<url>jdbc:mysql://localhost:3306/reqbaztrack</url>
 		<user>root</user>
 		<password>reqbaz</password>
 	</jdbc>
@@ -20,7 +20,7 @@
 
 			<!-- The database schema (or in the absence of schema support, in your RDBMS this
            can be the owner, user, database name) to be generated -->
-			<inputSchema>activitytracker</inputSchema>
+			<inputSchema>reqbaztrack</inputSchema>
 
 			<!-- All elements that are generated from your schema
            (A Java regular expression. Use the pipe to separate several expressions)
