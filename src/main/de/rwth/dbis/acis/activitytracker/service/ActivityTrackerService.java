@@ -3,6 +3,7 @@ package de.rwth.dbis.acis.activitytracker.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
@@ -80,8 +81,18 @@ public class ActivityTrackerService extends Service {
     protected String lang;
     protected String country;
 
-    public ActivityTrackerService() {
+    private ComboPooledDataSource dbConnectionPool;
+
+    public ActivityTrackerService() throws Exception {
+
         setFieldValues();
+
+        dbConnectionPool = new ComboPooledDataSource();
+        dbConnectionPool.setDriverClass("com.mysql.jdbc.Driver");
+        dbConnectionPool.setJdbcUrl(dbUrl);
+        dbConnectionPool.setUser(dbUserName);
+        dbConnectionPool.setPassword(dbPassword);
+
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +125,7 @@ public class ActivityTrackerService extends Service {
                 .setConnectionManager(cm)
                 .build();
         try {
-            dalFacade = createConnection();
+            dalFacade = getDBConnection();
             Gson gson = new Gson();
             ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -135,7 +146,7 @@ public class ActivityTrackerService extends Service {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
-            closeConnection(dalFacade);
+            closeDBConnection(dalFacade);
         }
     }
 
@@ -228,14 +239,14 @@ public class ActivityTrackerService extends Service {
         Activity activityToCreate = gson.fromJson(activity, Activity.class);
         //TODO validate activity
         try {
-            dalFacade = createConnection();
+            dalFacade = getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activityToCreate);
             return new HttpResponse(gson.toJson(createdActivity), HttpURLConnection.HTTP_CREATED);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
-            closeConnection(dalFacade);
+            closeDBConnection(dalFacade);
         }
     }
 
@@ -319,13 +330,12 @@ public class ActivityTrackerService extends Service {
         }
     }
 
-    //TODO use connection pool
-    public DALFacade createConnection() throws Exception {
-        Connection dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
+    public DALFacade getDBConnection() throws Exception {
+        Connection dbConnection = dbConnectionPool.getConnection();
         return new DALFacadeImpl(dbConnection, SQLDialect.MYSQL);
     }
 
-    public void closeConnection(DALFacade dalFacade) {
+    public void closeDBConnection(DALFacade dalFacade) {
         if (dalFacade == null) return;
         Connection dbConnection = dalFacade.getConnection();
         if (dbConnection != null) {

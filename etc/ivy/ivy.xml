@@ -14,6 +14,7 @@
         <dependency org="org.jooq" name="jooq" rev="3.6.2"/>
         <dependency org="org.jooq" name="jooq-codegen" rev="3.6.2"/>
         <dependency org="org.jooq" name="jooq-meta" rev="3.6.2"/>
+        <dependency org="c3p0" name="c3p0" rev="0.9.1.2" />
         <dependency org="com.google.code.gson" name="gson" rev="2.3"/>
         <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.5.1"/>
         <dependency org="commons-io" name="commons-io" rev="2.4"/>
