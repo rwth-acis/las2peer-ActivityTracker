@@ -341,7 +341,6 @@ public class ActivityTrackerService extends Service {
         if (dbConnection != null) {
             try {
                 dbConnection.close();
-                System.out.println("Database connection closed!");
             } catch (SQLException ignore) {
                 System.out.println("Could not close db connection!");
             }
