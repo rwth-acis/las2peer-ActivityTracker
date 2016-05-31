@@ -133,8 +133,13 @@ public class ActivityTrackerTest {
 	@Test
 	public void testDebugMapping()
 	{
-		ActivityTrackerService cl = new ActivityTrackerService();
-		assertTrue(cl.debugMapping());
+		try {
+			ActivityTrackerService cl = new ActivityTrackerService();
+			assertTrue(cl.debugMapping());
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
 	}
 
 }
