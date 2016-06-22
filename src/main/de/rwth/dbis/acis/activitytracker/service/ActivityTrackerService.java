@@ -15,6 +15,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Service;
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
 import i5.las2peer.restMapper.RESTMapper;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 
 /**
  * LAS2peer Activity Service
@@ -79,6 +81,8 @@ public class ActivityTrackerService extends Service {
     protected String dbUrl;
     protected String lang;
     protected String country;
+
+    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
 
     public ActivityTrackerService() {
         setFieldValues();
@@ -268,7 +272,6 @@ public class ActivityTrackerService extends Service {
         try {
             result = RESTMapper.getMethodsAsXML(this.getClass());
         } catch (Exception e) {
-
             e.printStackTrace();
         }
         return result;
@@ -286,8 +289,8 @@ public class ActivityTrackerService extends Service {
         if (dbConnection != null) {
             try {
                 dbConnection.close();
-                System.out.println("Database connection closed!");
-            } catch (SQLException ignore) {
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, e.toString(), e);
                 System.out.println("Could not close db connection!");
             }
         }
