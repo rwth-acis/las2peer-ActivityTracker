@@ -82,7 +82,8 @@ public class ActivityTrackerService extends Service {
     protected String lang;
     protected String country;
 
-    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
+    // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
+    // private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
 
     public ActivityTrackerService() {
         setFieldValues();
@@ -290,7 +291,7 @@ public class ActivityTrackerService extends Service {
             try {
                 dbConnection.close();
             } catch (SQLException e) {
-                logger.log(Level.SEVERE, e.toString(), e);
+                // logger.log(Level.SEVERE, e.toString(), e);
                 System.out.println("Could not close db connection!");
             }
         }

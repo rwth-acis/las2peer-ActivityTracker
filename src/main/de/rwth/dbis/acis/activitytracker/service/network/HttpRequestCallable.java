@@ -26,7 +26,8 @@ public class HttpRequestCallable implements Callable {
     private final HttpContext context;
     private final HttpGet httpget;
 
-    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
+    // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
+    //private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
 
     public HttpRequestCallable(CloseableHttpClient httpClient, HttpGet httpget) {
         this.httpClient = httpClient;
@@ -61,7 +62,7 @@ public class HttpRequestCallable implements Callable {
                 responseBody = writer.toString();
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, e.toString(), e);
+            // logger.log(Level.SEVERE, e.toString(), e);
             throw ExceptionHandler.getInstance().convert(e, ExceptionLocation.NETWORK, ErrorCode.UNKNOWN, "");
         } finally {
             if (response != null) {
