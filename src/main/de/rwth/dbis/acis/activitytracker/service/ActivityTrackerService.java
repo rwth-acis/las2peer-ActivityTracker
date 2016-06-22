@@ -16,6 +16,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Service;
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
 import i5.las2peer.restMapper.RESTMapper;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 
 /**
  * LAS2peer Activity Service
@@ -83,6 +85,8 @@ public class ActivityTrackerService extends Service {
 
     private ComboPooledDataSource dbConnectionPool;
 
+    // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
+    // private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
     public ActivityTrackerService() throws Exception {
 
         setFieldValues();
@@ -293,41 +297,9 @@ public class ActivityTrackerService extends Service {
         try {
             result = RESTMapper.getMethodsAsXML(this.getClass());
         } catch (Exception e) {
-
             e.printStackTrace();
         }
         return result;
-    }
-
-    // //////////////////////////////////////////////////////////////////////////////////////
-    // Methods providing a Swagger documentation of the service API.
-    // //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Returns the API documentation of all annotated resources
-     * for purposes of Swagger documentation.
-     * <p>
-     * Note:
-     * If you do not intend to use Swagger for the documentation
-     * of your service API, this method may be removed.
-     *
-     * @return The resource's documentation.
-     */
-    @GET
-    @Path("/swagger.json")
-    @Produces(MediaType.APPLICATION_JSON)
-    public HttpResponse getSwaggerJSON() {
-        Swagger swagger = new Reader(new Swagger()).read(this.getClass());
-        if (swagger == null) {
-            return new HttpResponse("Swagger API declaration not available!", HttpURLConnection.HTTP_NOT_FOUND);
-        }
-        swagger.getDefinitions().clear();
-        try {
-            return new HttpResponse(Json.mapper().writeValueAsString(swagger), HttpURLConnection.HTTP_OK);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return new HttpResponse(e.getMessage(), HttpURLConnection.HTTP_INTERNAL_ERROR);
-        }
     }
 
     public DALFacade getDBConnection() throws Exception {
@@ -341,7 +313,8 @@ public class ActivityTrackerService extends Service {
         if (dbConnection != null) {
             try {
                 dbConnection.close();
-            } catch (SQLException ignore) {
+            } catch (SQLException e) {
+                // logger.log(Level.SEVERE, e.toString(), e);
                 System.out.println("Could not close db connection!");
             }
         }

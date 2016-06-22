@@ -1,22 +1,26 @@
 <ivy-module version="2.0">
     <info organisation="i5" module="las2peer-service"/>
+    <configurations defaultconf="bundle">
+        <conf name="bundle" description="Additional dependencies loaded dynamically"/>
+        <conf name="platform" description="Jars needded for the las2peer platform" visibility="private"/>
+    </configurations>
     <publications>
-        <artifact type="pom" ext="pom" conf="default"/>
-        <artifact type="jar" ext="jar" conf="default"/>
+        <artifact type="pom" ext="pom" conf="*"/>
+        <artifact type="jar" ext="jar" conf="*"/>
     </publications>
     <dependencies>
-        <dependency org="i5" name="las2peer" rev="0.4.0" changing="true"/>
-        <dependency org="i5" name="las2peer-web-connector" rev="0.4-SNAPSHOT" changing="true"/>
-        <dependency org="junit" name="junit" rev="4.11"/>
-        <dependency org="mysql" name="mysql-connector-java" rev="5.1.6"/>
-        <dependency org="org.apache.commons" name="commons-pool2" rev="2.2"/>
-        <dependency org="org.apache.commons" name="commons-dbcp2" rev="2.0"/>
-        <dependency org="org.jooq" name="jooq" rev="3.6.2"/>
-        <dependency org="org.jooq" name="jooq-codegen" rev="3.6.2"/>
-        <dependency org="org.jooq" name="jooq-meta" rev="3.6.2"/>
+        <dependency org="i5" name="las2peer" rev="0.5.4" changing="true" conf="platform->*"/>
+        <dependency org="i5" name="las2peer-web-connector" rev="0.5.4" changing="true" conf="platform->*"/>
+        <dependency org="junit" name="junit" rev="4.11" conf="platform->*"/>
+        <dependency org="mysql" name="mysql-connector-java" rev="5.1.6" conf="platform->*"/>
+        <dependency org="org.apache.commons" name="commons-pool2" rev="2.2" conf="platform->*"/>
+        <dependency org="org.apache.commons" name="commons-dbcp2" rev="2.0" conf="platform->*"/>
+        <dependency org="org.jooq" name="jooq" rev="3.6.2" conf="platform->*"/>
+        <dependency org="org.jooq" name="jooq-codegen" rev="3.6.2" conf="platform->*"/>
+        <dependency org="org.jooq" name="jooq-meta" rev="3.6.2" conf="platform->*"/>
         <dependency org="c3p0" name="c3p0" rev="0.9.1.2" />
-        <dependency org="com.google.code.gson" name="gson" rev="2.3"/>
-        <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.5.1"/>
-        <dependency org="commons-io" name="commons-io" rev="2.4"/>
+        <dependency org="com.google.code.gson" name="gson" rev="2.3" conf="platform->*"/>
+        <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.5.1" conf="platform->*"/>
+        <dependency org="commons-io" name="commons-io" rev="2.4" conf="platform->*"/>
     </dependencies>
 </ivy-module>
