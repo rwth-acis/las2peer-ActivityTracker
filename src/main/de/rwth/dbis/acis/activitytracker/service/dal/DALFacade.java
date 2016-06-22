@@ -8,8 +8,7 @@ import java.sql.Connection;
 import java.util.List;
 
 public interface DALFacade {
-
-    Connection getConnection();
+    void close();
 
     List<Activity> findActivities(Pageable pageable) throws ActivityTrackerException;
 

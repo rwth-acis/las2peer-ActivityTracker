@@ -3,7 +3,6 @@ package de.rwth.dbis.acis.activitytracker.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
@@ -29,6 +28,9 @@ import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
+import org.apache.commons.dbcp2.*;
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -36,6 +38,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.jooq.SQLDialect;
 
+import javax.sql.DataSource;
 import javax.ws.rs.*;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -83,20 +86,15 @@ public class ActivityTrackerService extends Service {
     protected String lang;
     protected String country;
 
-    private ComboPooledDataSource dbConnectionPool;
+    private DataSource dataSource;
 
     // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
     // private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
+
     public ActivityTrackerService() throws Exception {
-
         setFieldValues();
-
-        dbConnectionPool = new ComboPooledDataSource();
-        dbConnectionPool.setDriverClass("com.mysql.jdbc.Driver");
-        dbConnectionPool.setJdbcUrl(dbUrl);
-        dbConnectionPool.setUser(dbUserName);
-        dbConnectionPool.setPassword(dbPassword);
-
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -302,22 +300,23 @@ public class ActivityTrackerService extends Service {
         return result;
     }
 
+    private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
+        ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dbUrl, dbUserName, dbPassword);
+        PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory, null);
+        ObjectPool<PoolableConnection> connectionPool = new GenericObjectPool<>(poolableConnectionFactory);
+        poolableConnectionFactory.setPool(connectionPool);
+        PoolingDataSource<PoolableConnection> dataSource = new PoolingDataSource<>(connectionPool);
+        return dataSource;
+    }
+
+
     public DALFacade getDBConnection() throws Exception {
-        Connection dbConnection = dbConnectionPool.getConnection();
-        return new DALFacadeImpl(dbConnection, SQLDialect.MYSQL);
+        return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
     }
 
     public void closeDBConnection(DALFacade dalFacade) {
         if (dalFacade == null) return;
-        Connection dbConnection = dalFacade.getConnection();
-        if (dbConnection != null) {
-            try {
-                dbConnection.close();
-            } catch (SQLException e) {
-                // logger.log(Level.SEVERE, e.toString(), e);
-                System.out.println("Could not close db connection!");
-            }
-        }
+        dalFacade.close();
     }
 
 }
