@@ -274,37 +274,6 @@ public class ActivityTrackerService extends Service {
         return result;
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////
-    // Methods providing a Swagger documentation of the service API.
-    // //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Returns the API documentation of all annotated resources
-     * for purposes of Swagger documentation.
-     * <p>
-     * Note:
-     * If you do not intend to use Swagger for the documentation
-     * of your service API, this method may be removed.
-     *
-     * @return The resource's documentation.
-     */
-    @GET
-    @Path("/swagger.json")
-    @Produces(MediaType.APPLICATION_JSON)
-    public HttpResponse getSwaggerJSON() {
-        Swagger swagger = new Reader(new Swagger()).read(this.getClass());
-        if (swagger == null) {
-            return new HttpResponse("Swagger API declaration not available!", HttpURLConnection.HTTP_NOT_FOUND);
-        }
-        swagger.getDefinitions().clear();
-        try {
-            return new HttpResponse(Json.mapper().writeValueAsString(swagger), HttpURLConnection.HTTP_OK);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return new HttpResponse(e.getMessage(), HttpURLConnection.HTTP_INTERNAL_ERROR);
-        }
-    }
-
     //TODO use connection pool
     public DALFacade createConnection() throws Exception {
         Connection dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
