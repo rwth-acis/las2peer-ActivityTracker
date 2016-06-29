@@ -15,6 +15,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Service;
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
 import i5.las2peer.restMapper.RESTMapper;
@@ -27,6 +28,9 @@ import io.swagger.annotations.*;
 import io.swagger.jaxrs.Reader;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
+import org.apache.commons.dbcp2.*;
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -34,6 +38,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.jooq.SQLDialect;
 
+import javax.sql.DataSource;
 import javax.ws.rs.*;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -48,6 +53,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 
 /**
  * LAS2peer Activity Service
@@ -80,8 +86,15 @@ public class ActivityTrackerService extends Service {
     protected String lang;
     protected String country;
 
-    public ActivityTrackerService() {
+    private DataSource dataSource;
+
+    // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
+    // private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
+
+    public ActivityTrackerService() throws Exception {
         setFieldValues();
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +127,7 @@ public class ActivityTrackerService extends Service {
                 .setConnectionManager(cm)
                 .build();
         try {
-            dalFacade = createConnection();
+            dalFacade = getDBConnection();
             Gson gson = new Gson();
             ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -135,7 +148,7 @@ public class ActivityTrackerService extends Service {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
-            closeConnection(dalFacade);
+            closeDBConnection(dalFacade);
         }
     }
 
@@ -228,14 +241,14 @@ public class ActivityTrackerService extends Service {
         Activity activityToCreate = gson.fromJson(activity, Activity.class);
         //TODO validate activity
         try {
-            dalFacade = createConnection();
+            dalFacade = getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activityToCreate);
             return new HttpResponse(gson.toJson(createdActivity), HttpURLConnection.HTTP_CREATED);
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
-            closeConnection(dalFacade);
+            closeDBConnection(dalFacade);
         }
     }
 
@@ -282,60 +295,28 @@ public class ActivityTrackerService extends Service {
         try {
             result = RESTMapper.getMethodsAsXML(this.getClass());
         } catch (Exception e) {
-
             e.printStackTrace();
         }
         return result;
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////
-    // Methods providing a Swagger documentation of the service API.
-    // //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Returns the API documentation of all annotated resources
-     * for purposes of Swagger documentation.
-     * <p>
-     * Note:
-     * If you do not intend to use Swagger for the documentation
-     * of your service API, this method may be removed.
-     *
-     * @return The resource's documentation.
-     */
-    @GET
-    @Path("/swagger.json")
-    @Produces(MediaType.APPLICATION_JSON)
-    public HttpResponse getSwaggerJSON() {
-        Swagger swagger = new Reader(new Swagger()).read(this.getClass());
-        if (swagger == null) {
-            return new HttpResponse("Swagger API declaration not available!", HttpURLConnection.HTTP_NOT_FOUND);
-        }
-        swagger.getDefinitions().clear();
-        try {
-            return new HttpResponse(Json.mapper().writeValueAsString(swagger), HttpURLConnection.HTTP_OK);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return new HttpResponse(e.getMessage(), HttpURLConnection.HTTP_INTERNAL_ERROR);
-        }
+    private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
+        ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dbUrl, dbUserName, dbPassword);
+        PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory, null);
+        ObjectPool<PoolableConnection> connectionPool = new GenericObjectPool<>(poolableConnectionFactory);
+        poolableConnectionFactory.setPool(connectionPool);
+        PoolingDataSource<PoolableConnection> dataSource = new PoolingDataSource<>(connectionPool);
+        return dataSource;
     }
 
-    //TODO use connection pool
-    public DALFacade createConnection() throws Exception {
-        Connection dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
-        return new DALFacadeImpl(dbConnection, SQLDialect.MYSQL);
+
+    public DALFacade getDBConnection() throws Exception {
+        return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
     }
 
-    public void closeConnection(DALFacade dalFacade) {
+    public void closeDBConnection(DALFacade dalFacade) {
         if (dalFacade == null) return;
-        Connection dbConnection = dalFacade.getConnection();
-        if (dbConnection != null) {
-            try {
-                dbConnection.close();
-                System.out.println("Database connection closed!");
-            } catch (SQLException ignore) {
-                System.out.println("Could not close db connection!");
-            }
-        }
+        dalFacade.close();
     }
 
 }

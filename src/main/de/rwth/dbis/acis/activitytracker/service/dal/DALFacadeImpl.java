@@ -9,6 +9,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerExcept
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Iterator;
 import java.util.List;
@@ -16,23 +17,17 @@ import java.util.List;
 public class DALFacadeImpl implements DALFacade {
 
     private final DSLContext dslContext;
-    private final Connection connection;
     private ActivityRepository activityRepository;
 
-    public DALFacadeImpl(Connection connection, SQLDialect dialect) {
-        this.connection = connection;
-        dslContext = DSL.using(connection, dialect);
+    public DALFacadeImpl(DataSource dataSource, SQLDialect dialect) {
+        dslContext = DSL.using(dataSource, dialect);
         activityRepository = new ActivityRepositoryImpl(dslContext);
     }
 
-    public DSLContext getDslContext() {
-        return dslContext;
+    public void close() {
+       dslContext.close();
     }
 
-    @Override
-    public Connection getConnection() {
-        return connection;
-    }
 
     @Override
     public List<Activity> findActivities(Pageable pageable) throws ActivityTrackerException{
