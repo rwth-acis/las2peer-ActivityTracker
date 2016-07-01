@@ -26,9 +26,6 @@ public class HttpRequestCallable implements Callable {
     private final HttpContext context;
     private final HttpGet httpget;
 
-    // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
-    //private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
-
     public HttpRequestCallable(CloseableHttpClient httpClient, HttpGet httpget) {
         this.httpClient = httpClient;
         this.context = new BasicHttpContext();
@@ -61,10 +58,12 @@ public class HttpRequestCallable implements Callable {
                 IOUtils.copy(entity.getContent(), writer);
                 responseBody = writer.toString();
             }
+        } catch (ActivityTrackerException ate) {
+            throw ate;
         } catch (Exception e) {
-            // logger.log(Level.SEVERE, e.toString(), e);
             throw ExceptionHandler.getInstance().convert(e, ExceptionLocation.NETWORK, ErrorCode.UNKNOWN, "");
-        } finally {
+        }
+        finally {
             if (response != null) {
                 response.close();
             }
