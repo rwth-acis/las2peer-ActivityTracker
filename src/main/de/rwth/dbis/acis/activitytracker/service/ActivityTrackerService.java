@@ -152,7 +152,7 @@ public class ActivityTrackerService extends Service {
             HttpResponse response = new HttpResponse(gson.toJson(activitiesExResult.getElements()), HttpURLConnection.HTTP_OK);
             Map<String, String> parameter = new HashMap<>();
             parameter.put("limit", String.valueOf(limit));
-            response = this.addPaginationToHtppResponse(activitiesExResult, "activities", parameter, response);
+            response = this.addPaginationToHtppResponse(activitiesExResult, "", parameter, response);
 
             return response;
 
@@ -286,23 +286,6 @@ public class ActivityTrackerService extends Service {
             }
         }
 
-        /*
-        if (paginationResult.getPrevCursor() != -1) {
-            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
-            } else {
-                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
-            }
-        }
-        if (paginationResult.getNextCursor() != -1) {
-            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
-            } else {
-                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
-            }
-        }
-        */
-
         URIBuilder uriBuilder = new URIBuilder(baseURL + path);
         for (Map.Entry<String, String> entry : httpParameter.entrySet()) {
             uriBuilder.addParameter(entry.getKey(), entry.getValue());
@@ -327,24 +310,7 @@ public class ActivityTrackerService extends Service {
                 links = links.concat("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\"");
             }
         }
-        /*
-        if (paginationResult.getPrevCursor() != -1) {
-            URIBuilder uriBuilder1 = new URIBuilder(uriBuilder.build());
-            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-                links = links.concat("<" + uriBuilder1.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"prev\",");
-            } else {
-                links = links.concat("<" + uriBuilder1.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"prev\",");
-            }
-        }
-        if (paginationResult.getNextCursor() != -1) {
-            URIBuilder uriBuilder2 = new URIBuilder(uriBuilder.build());
-            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-                links = links.concat("<" + uriBuilder2.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"next\"");
-            } else {
-                links = links.concat("<" + uriBuilder2.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\"");
-            }
-        }
-        */
+
         httpResponse.setHeader("Link", links);
         return httpResponse;
     }
