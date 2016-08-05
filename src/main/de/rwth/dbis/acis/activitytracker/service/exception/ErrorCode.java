@@ -7,7 +7,8 @@ public enum ErrorCode {
     AUTHORIZATION("003", "This user is not authorized to use this method"),
     DB_COMM("004", "Error during communicating to database. Possibly wrong connection parameters"),
     NOT_FOUND("005", "The item was not found"),
-    NETWORK_PROBLEM("006", "Error while trying to receive activity content");
+    NETWORK_PROBLEM("006", "Error while trying to receive activity content"),
+    WRONG_PARAMETER("006", "Wrong paramer given");
 
     private final String code;
     private final String message;

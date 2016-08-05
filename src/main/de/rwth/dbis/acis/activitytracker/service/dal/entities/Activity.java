@@ -4,7 +4,6 @@ import java.util.Date;
 
 public class Activity extends EntityBase {
 
-    private final int id;
     private final Date creationTime;
     private final String activityAction;
     private final String dataUrl;
@@ -14,10 +13,6 @@ public class Activity extends EntityBase {
     private final String parentDataType;
     private final String userUrl;
 
-    @Override
-    public int getId() {
-        return id;
-    }
 
     public Date getCreationTime() {
         return creationTime;
@@ -52,7 +47,7 @@ public class Activity extends EntityBase {
     }
 
     protected Activity(Builder builder) {
-        this.id = builder.id;
+        super(builder);
         this.creationTime = builder.creationTime;
         this.activityAction = builder.activityAction;
         this.dataUrl = builder.dataUrl;

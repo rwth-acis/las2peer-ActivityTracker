@@ -8,12 +8,14 @@ import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.ActivityEx;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
+import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Service;
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.HttpResponse;
 import i5.las2peer.restMapper.MediaType;
 import i5.las2peer.restMapper.RESTMapper;
@@ -36,6 +38,7 @@ import javax.ws.rs.*;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,11 +77,11 @@ public class ActivityTrackerService extends Service {
     protected String dbUrl;
     protected String lang;
     protected String country;
+    protected String baseURL;
 
     private DataSource dataSource;
 
-    // TODO: see http://layers.dbis.rwth-aachen.de/jira/browse/LAS-298
-    // private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
+    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
@@ -102,39 +105,61 @@ public class ActivityTrackerService extends Service {
     })
     //TODO add filter
     public HttpResponse getActivities(
-            @ApiParam(value = "Page number", required = false) @DefaultValue("0") @QueryParam("page") int page,
-            @ApiParam(value = "Elements of components by page", required = false) @DefaultValue("10") @QueryParam("per_page") int perPage,
+            @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
+            @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
+            @ApiParam(value = "Limit of elements of components", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
             @ApiParam(value = "User access token", required = false) @DefaultValue("") @QueryParam("access_token") String accessToken) {
-        List<Activity> activities = new ArrayList<Activity>();
-        List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
-        DALFacade dalFacade = null;
-        int getObjectCount = 0;
 
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        cm.setMaxTotal(20);
-        CloseableHttpClient httpclient = HttpClients.custom()
-                .setConnectionManager(cm)
-                .build();
+        DALFacade dalFacade = null;
         try {
+            if (before != -1 && after != -1) {
+                ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITIESERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
+            }
+            int cursor = before != -1 ? before : after;
+            Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
+
+            PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+            cm.setMaxTotal(20);
+            CloseableHttpClient httpclient = HttpClients.custom()
+                    .setConnectionManager(cm)
+                    .build();
+
             dalFacade = getDBConnection();
             Gson gson = new Gson();
             ExecutorService executor = Executors.newCachedThreadPool();
 
-            while (activitiesEx.size() < perPage && getObjectCount < 5) {
-                Pageable pageInfo = new PageInfo(page, perPage);
+            int getObjectCount = 0;
+            PaginationResult<Activity> activities;
+            List<ActivityEx> activitiesEx = new ArrayList<>();
+            Pageable pageInfo = new PageInfo(cursor, limit, "", sortDirection);
+            while (activitiesEx.size() <= limit && getObjectCount < 5) { // TODO <=
+                pageInfo = new PageInfo(cursor, limit, "", sortDirection);
                 activities = dalFacade.findActivities(pageInfo);
                 getObjectCount++;
-                page++;
-                activitiesEx.addAll(getObjectBodies(httpclient, executor, accessToken, activities));
+                cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
+                if (cursor < 0) {
+                    cursor = 0;
+                }
+                activitiesEx.addAll(getObjectBodies(httpclient, executor, accessToken, activities.getElements()));
             }
 
             executor.shutdown();
-            if (activitiesEx.size() > perPage) {
-                activitiesEx = activitiesEx.subList(0, perPage);
+            if (activitiesEx.size() > limit) {
+                activitiesEx = activitiesEx.subList(0, limit);
             }
-            return new HttpResponse(gson.toJson(activitiesEx), HttpURLConnection.HTTP_OK);
+            PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
+
+            HttpResponse response = new HttpResponse(gson.toJson(activitiesExResult.getElements()), HttpURLConnection.HTTP_OK);
+            Map<String, String> parameter = new HashMap<>();
+            parameter.put("limit", String.valueOf(limit));
+            response = this.addPaginationToHtppResponse(activitiesExResult, "activities", parameter, response);
+
+            return response;
+
+        } catch (ActivityTrackerException atException) {
+            return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, ex.getMessage());
             return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
         } finally {
             closeDBConnection(dalFacade);
@@ -143,10 +168,10 @@ public class ActivityTrackerService extends Service {
 
     private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String accessToken,
                                              List<Activity> activities) throws Exception {
-        List<ActivityEx> activitiesEx = new ArrayList<ActivityEx>();
-        Map<Integer, Future<String>> dataFutures = new HashMap<Integer, Future<String>>();
-        Map<Integer, Future<String>> parentDataFutures = new HashMap<Integer, Future<String>>();
-        Map<Integer, Future<String>> userFutures = new HashMap<Integer, Future<String>>();
+        List<ActivityEx> activitiesEx = new ArrayList<>();
+        Map<Integer, Future<String>> dataFutures = new HashMap<>();
+        Map<Integer, Future<String>> parentDataFutures = new HashMap<>();
+        Map<Integer, Future<String>> userFutures = new HashMap<>();
         JsonParser parser = new JsonParser();
 
         for (int i = 0; i < activities.size(); i++) {
@@ -239,6 +264,89 @@ public class ActivityTrackerService extends Service {
         } finally {
             closeDBConnection(dalFacade);
         }
+    }
+
+    public HttpResponse addPaginationToHtppResponse(PaginationResult paginationResult, String path, Map<String, String> httpParameter,
+                                                    HttpResponse httpResponse) throws URISyntaxException {
+        httpResponse.setHeader("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
+
+        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+            if (paginationResult.getPrevCursor() != -1) {
+                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
+            }
+            if (paginationResult.getNextCursor() != -1) {
+                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
+            }
+        } else {
+            if (paginationResult.getNextCursor() != -1) {
+                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
+            }
+            if (paginationResult.getPrevCursor() != -1) {
+                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
+            }
+        }
+
+        /*
+        if (paginationResult.getPrevCursor() != -1) {
+            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
+            } else {
+                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
+            }
+        }
+        if (paginationResult.getNextCursor() != -1) {
+            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
+            } else {
+                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
+            }
+        }
+        */
+
+        URIBuilder uriBuilder = new URIBuilder(baseURL + path);
+        for (Map.Entry<String, String> entry : httpParameter.entrySet()) {
+            uriBuilder.addParameter(entry.getKey(), entry.getValue());
+        }
+        String links = new String();
+        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+            if (paginationResult.getPrevCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links = links.concat("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"prev\",");
+            }
+            if (paginationResult.getNextCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links = links.concat("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"next\"");
+            }
+        } else {
+            if (paginationResult.getNextCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links = links.concat("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"prev\",");
+            }
+            if (paginationResult.getPrevCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links = links.concat("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\"");
+            }
+        }
+        /*
+        if (paginationResult.getPrevCursor() != -1) {
+            URIBuilder uriBuilder1 = new URIBuilder(uriBuilder.build());
+            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+                links = links.concat("<" + uriBuilder1.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"prev\",");
+            } else {
+                links = links.concat("<" + uriBuilder1.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"prev\",");
+            }
+        }
+        if (paginationResult.getNextCursor() != -1) {
+            URIBuilder uriBuilder2 = new URIBuilder(uriBuilder.build());
+            if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+                links = links.concat("<" + uriBuilder2.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"next\"");
+            } else {
+                links = links.concat("<" + uriBuilder2.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\"");
+            }
+        }
+        */
+        httpResponse.setHeader("Link", links);
+        return httpResponse;
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////

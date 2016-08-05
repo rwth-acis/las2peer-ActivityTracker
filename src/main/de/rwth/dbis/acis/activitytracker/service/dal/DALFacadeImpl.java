@@ -2,16 +2,14 @@ package de.rwth.dbis.acis.activitytracker.service.dal;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
+import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
 import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityRepository;
 import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityRepositoryImpl;
-import de.rwth.dbis.acis.activitytracker.service.dal.transform.ActivityTransformator;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.util.Iterator;
 import java.util.List;
 
 public class DALFacadeImpl implements DALFacade {
@@ -25,13 +23,13 @@ public class DALFacadeImpl implements DALFacade {
     }
 
     public void close() {
-       dslContext.close();
+        dslContext.close();
     }
 
 
     @Override
-    public List<Activity> findActivities(Pageable pageable) throws ActivityTrackerException{
-        List<Activity> activities = activityRepository.findAll(pageable);
+    public PaginationResult<Activity> findActivities(Pageable pageable) throws ActivityTrackerException {
+        PaginationResult<Activity> activities = activityRepository.findAll(pageable);
         return activities;
     }
 
