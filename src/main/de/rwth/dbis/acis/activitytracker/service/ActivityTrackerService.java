@@ -132,7 +132,7 @@ public class ActivityTrackerService extends Service {
             PaginationResult<Activity> activities;
             List<ActivityEx> activitiesEx = new ArrayList<>();
             Pageable pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-            while (activitiesEx.size() <= limit && getObjectCount < 5) { // TODO <=
+            while (activitiesEx.size() < limit && getObjectCount < 5) {
                 pageInfo = new PageInfo(cursor, limit, "", sortDirection);
                 activities = dalFacade.findActivities(pageInfo);
                 getObjectCount++;
