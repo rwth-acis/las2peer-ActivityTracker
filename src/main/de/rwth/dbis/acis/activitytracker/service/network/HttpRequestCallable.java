@@ -33,7 +33,7 @@ public class HttpRequestCallable implements Callable {
     }
 
     @Override
-    public Object call() throws Exception, ActivityTrackerException {
+    public Object call() throws Exception {
         String responseBody = new String();
         CloseableHttpResponse response = null;
         try {

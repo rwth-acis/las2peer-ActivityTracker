@@ -108,7 +108,7 @@ public class ActivityTrackerService extends Service {
             @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
             @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
             @ApiParam(value = "Limit of elements of components", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
-            @ApiParam(value = "User access token", required = false) @DefaultValue("") @QueryParam("access_token") String accessToken) {
+            @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
 
         DALFacade dalFacade = null;
         try {
@@ -140,7 +140,7 @@ public class ActivityTrackerService extends Service {
                 if (cursor < 0) {
                     cursor = 0;
                 }
-                activitiesEx.addAll(getObjectBodies(httpclient, executor, accessToken, activities.getElements()));
+                activitiesEx.addAll(getObjectBodies(httpclient, executor, authorizationToken, activities.getElements()));
             }
 
             executor.shutdown();
@@ -166,7 +166,7 @@ public class ActivityTrackerService extends Service {
         }
     }
 
-    private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String accessToken,
+    private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
                                              List<Activity> activities) throws Exception {
         List<ActivityEx> activitiesEx = new ArrayList<>();
         Map<Integer, Future<String>> dataFutures = new HashMap<>();
@@ -178,29 +178,29 @@ public class ActivityTrackerService extends Service {
             Activity activity = activities.get(i);
             if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getDataUrl());
-                if (!accessToken.isEmpty()) {
-                    uriBuilder.setParameter("access_token", accessToken);
-                }
                 URI uri = uriBuilder.build();
                 HttpGet httpget = new HttpGet(uri);
+                if (!authorizationToken.isEmpty()) {
+                    httpget.addHeader("authorization", authorizationToken);
+                }
                 dataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
             }
             if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getParentDataUrl());
-                if (!accessToken.isEmpty()) {
-                    uriBuilder.setParameter("access_token", accessToken);
-                }
                 URI uri = uriBuilder.build();
                 HttpGet httpget = new HttpGet(uri);
+                if (!authorizationToken.isEmpty()) {
+                    httpget.addHeader("authorization", authorizationToken);
+                }
                 parentDataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
             }
             if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
                 URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
-                if (!accessToken.isEmpty()) {
-                    uriBuilder.setParameter("access_token", accessToken);
-                }
                 URI uri = uriBuilder.build();
                 HttpGet httpget = new HttpGet(uri);
+                if (!authorizationToken.isEmpty()) {
+                    httpget.addHeader("authorization", authorizationToken);
+                }
                 userFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
             }
         }
