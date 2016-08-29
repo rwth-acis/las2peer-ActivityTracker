@@ -21,6 +21,8 @@ etc/ivy/ivy.jar
 restMapping.xml
 /out
 /output/
+bin/start_network.bat
+bin/start_network.sh
 
 # IntelliJ
 .idea/
@@ -28,5 +30,3 @@ restMapping.xml
 # Eclipse
 .metadata
 .idea/workspace.xml
-bin/start_network.bat
-bin/start_network.sh
