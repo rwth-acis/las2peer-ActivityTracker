@@ -1,15 +1,16 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.helpers;
 
 public interface Pageable {
-    int getOffset();
+    int getCursor();
 
-    int getPageNumber();
+    int getLimit();
 
-    int getPageSize();
+    String getFilter();
 
     SortDirection getSortDirection();
 
-    public enum SortDirection {
+    enum SortDirection {
         DEFAULT, ASC, DESC
     }
+
 }

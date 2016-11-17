@@ -2,33 +2,35 @@ package de.rwth.dbis.acis.activitytracker.service.dal.helpers;
 
 public class PageInfo implements Pageable {
 
-    private final int pageNumber;
-    private final int pageSize;
+    private final int cursor;
+    private final int limit;
+    private final String filter;
     private final SortDirection sortDirection;
 
-    public PageInfo(int pageNumber, int pageSize) {
-        this(pageNumber, pageSize, SortDirection.DEFAULT);
+    public PageInfo(int cursor, int limit, String filter) {
+        this(cursor, limit, filter, SortDirection.DEFAULT);
     }
 
-    public PageInfo(int pageNumber, int pageSize, SortDirection sortDirection) {
-        this.pageNumber = pageNumber;
-        this.pageSize = pageSize;
+    public PageInfo(int cursor, int limit, String filter, SortDirection sortDirection) {
+        this.cursor = cursor;
+        this.limit = limit;
+        this.filter = filter;
         this.sortDirection = sortDirection;
     }
 
     @Override
-    public int getOffset() {
-        return pageNumber * pageSize;
+    public int getCursor() {
+        return cursor;
     }
 
     @Override
-    public int getPageNumber() {
-        return pageNumber;
+    public int getLimit() {
+        return limit;
     }
 
     @Override
-    public int getPageSize() {
-        return pageSize;
+    public String getFilter() {
+        return filter;
     }
 
     @Override

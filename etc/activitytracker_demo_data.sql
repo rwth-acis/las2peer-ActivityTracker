@@ -18,7 +18,7 @@ VALUES
    NULL, 'http://localhost:8080/bazaar/components/1', 'COMPONENT', 'http://localhost:8080/bazaar/users/2'),
   ('6', '2015-10-21 10:00:00', 'CREATE', 'http://localhost:8080/bazaar/projects/2', 'PROJECT',
    'http://localhost:5000/#!/projects/2', NULL, NULL, 'http://localhost:8080/bazaar/users/2'),
-  ('7', '2015-10-21 07:00:00', 'CREATE', 'http://localhost:8080/bazaar/components/2', 'COMPONENT',
+  ('7', '2015-10-21 10:00:00', 'CREATE', 'http://localhost:8080/bazaar/components/2', 'COMPONENT',
    'http://localhost:5000/#!/projects/2/components/2', 'http://localhost:8080/bazaar/projects/2',
    'PROJECT', 'http://localhost:8080/bazaar/users/2'),
   ('8', '2015-10-21 11:00:00', 'CREATE', 'http://localhost:8080/bazaar/requirements/2', 'REQUIREMENT',
