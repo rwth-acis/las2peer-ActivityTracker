@@ -14,16 +14,9 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
-import i5.las2peer.api.Service;
+import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.restMapper.HttpResponse;
-import i5.las2peer.restMapper.MediaType;
-import i5.las2peer.restMapper.RESTMapper;
-import i5.las2peer.restMapper.annotations.ContentParam;
-import i5.las2peer.restMapper.annotations.Version;
-import i5.las2peer.restMapper.tools.ValidationResult;
-import i5.las2peer.restMapper.tools.XMLCheck;
-import i5.las2peer.security.Context;
+import i5.las2peer.restMapper.RESTService;
 import io.swagger.annotations.*;
 import org.apache.commons.dbcp2.*;
 import org.apache.http.client.methods.HttpGet;
@@ -35,7 +28,8 @@ import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
 import javax.ws.rs.*;
-import java.io.IOException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -50,8 +44,6 @@ import java.util.concurrent.Future;
 /**
  * LAS2peer Activity Service
  */
-@Path("/activities")
-@Version("0.1")
 @Api(value = "/activities", description = "Activities resource")
 @SwaggerDefinition(
         info = @Info(
@@ -69,14 +61,12 @@ import java.util.concurrent.Future;
                         url = "http://requirements-bazaar.org/license"
                 )
         ))
-public class ActivityTrackerService extends Service {
+public class ActivityTrackerService extends RESTService {
 
     //CONFIG PROPERTIES
     protected String dbUserName;
     protected String dbPassword;
     protected String dbUrl;
-    protected String lang;
-    protected String country;
     protected String baseURL;
 
     private DataSource dataSource;
@@ -89,81 +79,120 @@ public class ActivityTrackerService extends Service {
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////
-    // Service methods.
-    // //////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    protected void initResources() {
+        getResourceConfig().register(Resource.class);
 
-    @GET
+    }
+
     @Path("/")
-    @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "This method returns a list of activities",
-            notes = "Default the latest ten activities will be returned")
-    @ApiResponses(value = {
-            @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities"),
-            @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
-            @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
-    })
-    //TODO add filter
-    public HttpResponse getActivities(
-            @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
-            @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
-            @ApiParam(value = "Limit of elements of components", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
-            @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
+    public static class Resource {
 
-        DALFacade dalFacade = null;
-        try {
-            if (before != -1 && after != -1) {
-                ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITIESERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
-            }
-            int cursor = before != -1 ? before : after;
-            Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
+        // //////////////////////////////////////////////////////////////////////////////////////
+        // Service methods.
+        // //////////////////////////////////////////////////////////////////////////////////////
 
-            PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-            cm.setMaxTotal(20);
-            CloseableHttpClient httpclient = HttpClients.custom()
-                    .setConnectionManager(cm)
-                    .build();
+        @GET
+        @Path("/")
+        @Produces(MediaType.APPLICATION_JSON)
+        @ApiOperation(value = "This method returns a list of activities",
+                notes = "Default the latest ten activities will be returned")
+        @ApiResponses(value = {
+                @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities"),
+                @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
+                @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
+        })
+        //TODO add filter
+        public Response getActivities(
+                @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
+                @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
+                @ApiParam(value = "Limit of elements of components", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
+                @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
 
-            dalFacade = getDBConnection();
-            Gson gson = new Gson();
-            ExecutorService executor = Executors.newCachedThreadPool();
-
-            int getObjectCount = 0;
-            PaginationResult<Activity> activities;
-            List<ActivityEx> activitiesEx = new ArrayList<>();
-            Pageable pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-            while (activitiesEx.size() < limit && getObjectCount < 5) {
-                pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-                activities = dalFacade.findActivities(pageInfo);
-                getObjectCount++;
-                cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
-                if (cursor < 0) {
-                    cursor = 0;
+            DALFacade dalFacade = null;
+            try {
+                if (before != -1 && after != -1) {
+                    ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITIESERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
                 }
-                activitiesEx.addAll(getObjectBodies(httpclient, executor, authorizationToken, activities.getElements()));
+                int cursor = before != -1 ? before : after;
+                Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
+
+                PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+                cm.setMaxTotal(20);
+                CloseableHttpClient httpclient = HttpClients.custom()
+                        .setConnectionManager(cm)
+                        .build();
+
+                dalFacade = Context.getCurrent().getService().getDBConnection();
+                Gson gson = new Gson();
+                ExecutorService executor = Executors.newCachedThreadPool();
+
+                int getObjectCount = 0;
+                PaginationResult<Activity> activities;
+                List<ActivityEx> activitiesEx = new ArrayList<>();
+                Pageable pageInfo = new PageInfo(cursor, limit, "", sortDirection);
+                while (activitiesEx.size() < limit && getObjectCount < 5) {
+                    pageInfo = new PageInfo(cursor, limit, "", sortDirection);
+                    activities = dalFacade.findActivities(pageInfo);
+                    getObjectCount++;
+                    cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
+                    if (cursor < 0) {
+                        cursor = 0;
+                    }
+                    activitiesEx.addAll(Context.getCurrent().getService().getObjectBodies(httpclient, executor, authorizationToken, activities.getElements()));
+                }
+
+                executor.shutdown();
+                if (activitiesEx.size() > limit) {
+                    activitiesEx = activitiesEx.subList(0, limit);
+                }
+                PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
+
+                Response response = Response.ok().entity(gson.toJson(activitiesExResult.getElements())).build();
+                Map<String, String> parameter = new HashMap<>();
+                parameter.put("limit", String.valueOf(limit));
+                response = Context.getCurrent().getService().addPaginationToHtppResponse(activitiesExResult, "", parameter, response);
+
+                return response;
+
+            } catch (ActivityTrackerException atException) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+            } catch (Exception ex) {
+                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, ex.getMessage());
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+            } finally {
+                Context.getCurrent().getService().closeDBConnection(dalFacade);
             }
-
-            executor.shutdown();
-            if (activitiesEx.size() > limit) {
-                activitiesEx = activitiesEx.subList(0, limit);
-            }
-            PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
-
-            HttpResponse response = new HttpResponse(gson.toJson(activitiesExResult.getElements()), HttpURLConnection.HTTP_OK);
-            Map<String, String> parameter = new HashMap<>();
-            parameter.put("limit", String.valueOf(limit));
-            response = this.addPaginationToHtppResponse(activitiesExResult, "", parameter, response);
-
-            return response;
-
-        } catch (ActivityTrackerException atException) {
-            return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
-        } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, ex.getMessage());
-            return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
-        } finally {
-            closeDBConnection(dalFacade);
         }
+
+        @POST
+        @Path("/")
+        @Consumes(MediaType.APPLICATION_JSON)
+        @Produces(MediaType.APPLICATION_JSON)
+        @ApiOperation(value = "This method allows to create an activity",
+                notes = "Returns the created activity")
+        @ApiResponses(value = {
+                @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
+                @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
+        })
+        public Response createActivity(@ApiParam(value = "Activity" +
+                " entity as JSON", required = true) String activity) {
+            Gson gson = new Gson();
+            DALFacade dalFacade = null;
+            Activity activityToCreate = gson.fromJson(activity, Activity.class);
+            //TODO validate activity
+            try {
+                dalFacade = Context.getCurrent().getService().getDBConnection();
+                Activity createdActivity = dalFacade.createActivity(activityToCreate);
+                return Response.created().entity(gson.toJson(createdActivity)).build();
+            } catch (Exception ex) {
+                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+            } finally {
+                Context.getCurrent().getService().closeDBConnection(dalFacade);
+            }
+        }
+
     }
 
     private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
@@ -226,10 +255,10 @@ public class ActivityTrackerService extends Service {
                 Throwable exCause = ex.getCause();
                 if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
-                    Context.logMessage(this, "Object not visible for user token or anonymous. Skip object.");
+                    Context.getCurrent().logMessage(this, "Object not visible for user token or anonymous. Skip object.");
                 } else if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
-                    Context.logMessage(this, "Resource not found. Skip object.");
+                    Context.getCurrent().logMessage(this, "Resource not found. Skip object.");
                 } else {
                     throw ex;
                 }
@@ -238,51 +267,23 @@ public class ActivityTrackerService extends Service {
         return activitiesEx;
     }
 
-    @POST
-    @Path("/")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "This method allows to create an activity",
-            notes = "Returns the created activity")
-    @ApiResponses(value = {
-            @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
-            @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
-    })
-    public HttpResponse createActivity(@ApiParam(value = "Activity" +
-            " entity as JSON", required = true) @ContentParam String activity) {
-        Gson gson = new Gson();
-        DALFacade dalFacade = null;
-        Activity activityToCreate = gson.fromJson(activity, Activity.class);
-        //TODO validate activity
-        try {
-            dalFacade = getDBConnection();
-            Activity createdActivity = dalFacade.createActivity(activityToCreate);
-            return new HttpResponse(gson.toJson(createdActivity), HttpURLConnection.HTTP_CREATED);
-        } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
-            return new HttpResponse(ExceptionHandler.getInstance().toJSON(atException), HttpURLConnection.HTTP_INTERNAL_ERROR);
-        } finally {
-            closeDBConnection(dalFacade);
-        }
-    }
-
-    public HttpResponse addPaginationToHtppResponse(PaginationResult paginationResult, String path, Map<String, String> httpParameter,
-                                                    HttpResponse httpResponse) throws URISyntaxException {
-        httpResponse.setHeader("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
+    private Response addPaginationToResponse(PaginationResult paginationResult, String path, Map<String, String> httpParameter,
+                                             Response response) throws URISyntaxException {
+        response.setHeader("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
 
         if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
             if (paginationResult.getPrevCursor() != -1) {
-                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
+                response.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
             }
             if (paginationResult.getNextCursor() != -1) {
-                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
+                response.setHeader("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
             }
         } else {
             if (paginationResult.getNextCursor() != -1) {
-                httpResponse.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
+                response.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
             }
             if (paginationResult.getPrevCursor() != -1) {
-                httpResponse.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
+                response.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
             }
         }
 
@@ -311,56 +312,8 @@ public class ActivityTrackerService extends Service {
             }
         }
 
-        httpResponse.setHeader("Link", links);
-        return httpResponse;
-    }
-
-    // //////////////////////////////////////////////////////////////////////////////////////
-    // Methods required by the LAS2peer framework.
-    // //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Method for debugging purposes.
-     * Here the concept of restMapping validation is shown.
-     * It is important to check, if all annotations are correct and consistent.
-     * Otherwise the service will not be accessible by the WebConnector.
-     * Best to do it in the unit tests.
-     * To avoid being overlooked/ignored the method is implemented here and not in the test section.
-     *
-     * @return true, if mapping correct
-     */
-    public boolean debugMapping() {
-        String XML_LOCATION = "./restMapping.xml";
-        String xml = getRESTMapping();
-
-        try {
-            RESTMapper.writeFile(XML_LOCATION, xml);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        XMLCheck validator = new XMLCheck();
-        ValidationResult result = validator.validate(xml);
-
-        if (result.isValid()) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * This method is needed for every RESTful application in LAS2peer. There is no need to change!
-     *
-     * @return the mapping
-     */
-    public String getRESTMapping() {
-        String result = "";
-        try {
-            result = RESTMapper.getMethodsAsXML(this.getClass());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return result;
+        response.setHeader("Link", links);
+        return response;
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
