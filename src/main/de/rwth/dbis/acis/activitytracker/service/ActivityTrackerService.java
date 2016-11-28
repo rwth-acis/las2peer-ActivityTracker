@@ -28,6 +28,7 @@ import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.HttpURLConnection;
@@ -88,6 +89,8 @@ public class ActivityTrackerService extends RESTService {
     @Path("/")
     public static class Resource {
 
+        private final ActivityTrackerService service = (ActivityTrackerService) Context.getCurrent().getService();
+
         // //////////////////////////////////////////////////////////////////////////////////////
         // Service methods.
         // //////////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +126,7 @@ public class ActivityTrackerService extends RESTService {
                         .setConnectionManager(cm)
                         .build();
 
-                dalFacade = Context.getCurrent().getService().getDBConnection();
+                dalFacade = service.getDBConnection();
                 Gson gson = new Gson();
                 ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -139,7 +142,7 @@ public class ActivityTrackerService extends RESTService {
                     if (cursor < 0) {
                         cursor = 0;
                     }
-                    activitiesEx.addAll(Context.getCurrent().getService().getObjectBodies(httpclient, executor, authorizationToken, activities.getElements()));
+                    activitiesEx.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activities.getElements()));
                 }
 
                 executor.shutdown();
@@ -148,10 +151,11 @@ public class ActivityTrackerService extends RESTService {
                 }
                 PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
 
-                Response response = Response.ok().entity(gson.toJson(activitiesExResult.getElements())).build();
                 Map<String, String> parameter = new HashMap<>();
                 parameter.put("limit", String.valueOf(limit));
-                response = Context.getCurrent().getService().addPaginationToHtppResponse(activitiesExResult, "", parameter, response);
+                Link[] links = service.addPaginationToResponse(activitiesExResult, "", parameter);
+
+                Response response = Response.ok().entity(gson.toJson(activitiesExResult.getElements())).links(links).build();
 
                 return response;
 
@@ -161,7 +165,7 @@ public class ActivityTrackerService extends RESTService {
                 ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, ex.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             } finally {
-                Context.getCurrent().getService().closeDBConnection(dalFacade);
+                service.closeDBConnection(dalFacade);
             }
         }
 
@@ -182,14 +186,14 @@ public class ActivityTrackerService extends RESTService {
             Activity activityToCreate = gson.fromJson(activity, Activity.class);
             //TODO validate activity
             try {
-                dalFacade = Context.getCurrent().getService().getDBConnection();
+                dalFacade = service.getDBConnection();
                 Activity createdActivity = dalFacade.createActivity(activityToCreate);
-                return Response.created().entity(gson.toJson(createdActivity)).build();
+                return Response.status(Response.Status.CREATED).entity(gson.toJson(createdActivity)).build();
             } catch (Exception ex) {
                 ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             } finally {
-                Context.getCurrent().getService().closeDBConnection(dalFacade);
+                service.closeDBConnection(dalFacade);
             }
         }
 
@@ -255,10 +259,10 @@ public class ActivityTrackerService extends RESTService {
                 Throwable exCause = ex.getCause();
                 if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
-                    Context.getCurrent().logMessage(this, "Object not visible for user token or anonymous. Skip object.");
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Object not visible for user token or anonymous. Skip object.");
                 } else if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
-                    Context.getCurrent().logMessage(this, "Resource not found. Skip object.");
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
                 } else {
                     throw ex;
                 }
@@ -267,9 +271,11 @@ public class ActivityTrackerService extends RESTService {
         return activitiesEx;
     }
 
-    private Response addPaginationToResponse(PaginationResult paginationResult, String path, Map<String, String> httpParameter,
-                                             Response response) throws URISyntaxException {
-        response.setHeader("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
+    public Link[] addPaginationToResponse(PaginationResult paginationResult, String path, Map<String, String> httpParameter) throws URISyntaxException {
+
+        List<Link> links = new ArrayList<>();
+/*
+        response.setHeader(setHeader("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
 
         if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
             if (paginationResult.getPrevCursor() != -1) {
@@ -286,34 +292,32 @@ public class ActivityTrackerService extends RESTService {
                 response.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
             }
         }
-
+*/
         URIBuilder uriBuilder = new URIBuilder(baseURL + path);
         for (Map.Entry<String, String> entry : httpParameter.entrySet()) {
             uriBuilder.addParameter(entry.getKey(), entry.getValue());
         }
-        String links = new String();
         if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
             if (paginationResult.getPrevCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links = links.concat("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"prev\",");
+                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"prev\","));
             }
             if (paginationResult.getNextCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links = links.concat("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"next\"");
+                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"next\""));
             }
         } else {
             if (paginationResult.getNextCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links = links.concat("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"prev\",");
+                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"prev\","));
             }
             if (paginationResult.getPrevCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links = links.concat("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\"");
+                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\""));
             }
         }
 
-        response.setHeader("Link", links);
-        return response;
+        return (Link[]) links.toArray();
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
