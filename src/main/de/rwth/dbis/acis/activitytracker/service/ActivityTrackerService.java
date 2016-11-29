@@ -149,13 +149,17 @@ public class ActivityTrackerService extends RESTService {
                 if (activitiesEx.size() > limit) {
                     activitiesEx = activitiesEx.subList(0, limit);
                 }
+
                 PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
 
                 Map<String, String> parameter = new HashMap<>();
                 parameter.put("limit", String.valueOf(limit));
-                Link[] links = service.addPaginationToResponse(activitiesExResult, "", parameter);
 
-                Response response = Response.ok().entity(gson.toJson(activitiesExResult.getElements())).links(links).build();
+                Response.ResponseBuilder responseBuilder = Response.ok();
+                responseBuilder = responseBuilder.entity(gson.toJson(activitiesExResult.getElements()));
+                responseBuilder = service.paginationLinks(responseBuilder, activitiesExResult, "", parameter);
+                responseBuilder = service.xHeaderFields(responseBuilder, activitiesExResult);
+                Response response = responseBuilder.build();
 
                 return response;
 
@@ -271,28 +275,9 @@ public class ActivityTrackerService extends RESTService {
         return activitiesEx;
     }
 
-    public Link[] addPaginationToResponse(PaginationResult paginationResult, String path, Map<String, String> httpParameter) throws URISyntaxException {
-
+    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult, String path, Map<String, String> httpParameter) throws URISyntaxException {
         List<Link> links = new ArrayList<>();
-/*
-        response.setHeader(setHeader("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
 
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                response.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                response.setHeader("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                response.setHeader("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                response.setHeader("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
-            }
-        }
-*/
         URIBuilder uriBuilder = new URIBuilder(baseURL + path);
         for (Map.Entry<String, String> entry : httpParameter.entrySet()) {
             uriBuilder.addParameter(entry.getKey(), entry.getValue());
@@ -317,7 +302,28 @@ public class ActivityTrackerService extends RESTService {
             }
         }
 
-        return (Link[]) links.toArray();
+        responseBuilder = responseBuilder.links((Link[]) links.toArray());
+        return responseBuilder;
+    }
+
+    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult) {
+        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
+        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+            if (paginationResult.getPrevCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
+            }
+            if (paginationResult.getNextCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
+            }
+        } else {
+            if (paginationResult.getNextCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
+            }
+            if (paginationResult.getPrevCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
+            }
+        }
+        return responseBuilder;
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
