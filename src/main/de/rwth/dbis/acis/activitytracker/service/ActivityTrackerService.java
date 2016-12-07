@@ -285,24 +285,23 @@ public class ActivityTrackerService extends RESTService {
         if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
             if (paginationResult.getPrevCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"prev\","));
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build()).rel("prev").build());
             }
             if (paginationResult.getNextCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"next\""));
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build()).rel("next").build());
             }
         } else {
             if (paginationResult.getNextCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build() + ">; rel=\"prev\","));
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build()).rel("prev").build());
             }
             if (paginationResult.getPrevCursor() != -1) {
                 URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.valueOf("<" + uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build() + ">; rel=\"next\""));
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build()).rel("next").build());
             }
         }
-
-        responseBuilder = responseBuilder.links((Link[]) links.toArray());
+        responseBuilder = responseBuilder.links(links.toArray(new Link[links.size()]));
         return responseBuilder;
     }
 
