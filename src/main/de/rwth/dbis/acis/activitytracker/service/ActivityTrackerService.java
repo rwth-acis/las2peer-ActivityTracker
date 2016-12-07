@@ -17,6 +17,7 @@ import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
+import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
 import org.apache.commons.dbcp2.*;
 import org.apache.http.client.methods.HttpGet;
@@ -45,23 +46,7 @@ import java.util.concurrent.Future;
 /**
  * LAS2peer Activity Service
  */
-@Api(value = "/activities", description = "Activities resource")
-@SwaggerDefinition(
-        info = @Info(
-                title = "LAS2peer Activity Service",
-                version = "0.1",
-                description = "An activity tracker for LAS2peer and other web services.",
-                termsOfService = "http://requirements-bazaar.org",
-                contact = @Contact(
-                        name = "Requirements Bazaar Dev Team",
-                        url = "http://requirements-bazaar.org",
-                        email = "info@requirements-bazaar.org"
-                ),
-                license = @License(
-                        name = "Apache2",
-                        url = "http://requirements-bazaar.org/license"
-                )
-        ))
+@ServicePath("activities")
 public class ActivityTrackerService extends RESTService {
 
     //CONFIG PROPERTIES
@@ -85,6 +70,24 @@ public class ActivityTrackerService extends RESTService {
         getResourceConfig().register(Resource.class);
 
     }
+
+    @Api(value = "/activities", description = "Activities resource")
+    @SwaggerDefinition(
+            info = @Info(
+                    title = "LAS2peer Activity Service",
+                    version = "0.1",
+                    description = "An activity tracker for LAS2peer and other web services.",
+                    termsOfService = "http://requirements-bazaar.org",
+                    contact = @Contact(
+                            name = "Requirements Bazaar Dev Team",
+                            url = "http://requirements-bazaar.org",
+                            email = "info@requirements-bazaar.org"
+                    ),
+                    license = @License(
+                            name = "Apache2",
+                            url = "http://requirements-bazaar.org/license"
+                    )
+            ))
 
     @Path("/")
     public static class Resource {
