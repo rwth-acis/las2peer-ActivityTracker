@@ -15,9 +15,11 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Context;
+import i5.las2peer.execution.NoSuchServiceMethodException;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
+import i5.las2peer.security.L2pSecurityException;
 import io.swagger.annotations.*;
 import org.apache.commons.dbcp2.*;
 import org.apache.http.client.methods.HttpGet;
@@ -32,6 +34,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -68,7 +71,26 @@ public class ActivityTrackerService extends RESTService {
     @Override
     protected void initResources() {
         getResourceConfig().register(Resource.class);
+    }
 
+    /**
+     * Create Activty over RMI
+     * @param activity as JSON string
+     * @return
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     * @throws L2pSecurityException
+     * @throws NoSuchServiceMethodException
+     */
+    public String createActivity(String activity) throws InvocationTargetException, IllegalAccessException, L2pSecurityException, NoSuchServiceMethodException {
+        try {
+            Gson gson = new Gson();
+            Activity activityToCreate = gson.fromJson(activity, Activity.class);
+            Activity createdActivity = this.storeActivity(activityToCreate);
+            return new Integer(Response.Status.CREATED.getStatusCode()).toString();
+        } catch (ActivityTrackerException atException) {
+            return new Integer(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).toString();
+        }
     }
 
     @Api(value = "/activities", description = "Activities resource")
@@ -188,22 +210,31 @@ public class ActivityTrackerService extends RESTService {
         })
         public Response createActivity(@ApiParam(value = "Activity" +
                 " entity as JSON", required = true) String activity) {
-            Gson gson = new Gson();
-            DALFacade dalFacade = null;
-            Activity activityToCreate = gson.fromJson(activity, Activity.class);
-            //TODO validate activity
             try {
-                dalFacade = service.getDBConnection();
-                Activity createdActivity = dalFacade.createActivity(activityToCreate);
+                Gson gson = new Gson();
+                Activity activityToCreate = gson.fromJson(activity, Activity.class);
+                Activity createdActivity = service.storeActivity(activityToCreate);
                 return Response.status(Response.Status.CREATED).entity(gson.toJson(createdActivity)).build();
-            } catch (Exception ex) {
-                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            } catch (ActivityTrackerException atException) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
-            } finally {
-                service.closeDBConnection(dalFacade);
             }
         }
 
+    }
+
+    private Activity storeActivity(Activity activity) throws ActivityTrackerException {
+        //TODO validate activity
+        DALFacade dalFacade = null;
+        try {
+            dalFacade = this.getDBConnection();
+            Activity createdActivity = dalFacade.createActivity(activity);
+            return createdActivity;
+        } catch (Exception ex) {
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            throw atException;
+        } finally {
+            this.closeDBConnection(dalFacade);
+        }
     }
 
     private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
