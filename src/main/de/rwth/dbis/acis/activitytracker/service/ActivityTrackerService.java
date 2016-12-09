@@ -97,7 +97,7 @@ public class ActivityTrackerService extends RESTService {
     @SwaggerDefinition(
             info = @Info(
                     title = "LAS2peer Activity Service",
-                    version = "0.1",
+                    version = "0.2",
                     description = "An activity tracker for LAS2peer and other web services.",
                     termsOfService = "http://requirements-bazaar.org",
                     contact = @Contact(
