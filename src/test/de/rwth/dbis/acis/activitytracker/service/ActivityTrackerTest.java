@@ -70,16 +70,6 @@ public class ActivityTrackerTest {
         connector.start(node);
         Thread.sleep(1000); // wait a second for the connector to become ready
         testAgent = MockAgentFactory.getAdam(); // get a locked agent
-
-        connector.updateServiceList();
-        // avoid timing errors: wait for the repository manager to get all services before continuing
-        try {
-            System.out.println("waiting..");
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
     }
 
     /**
@@ -152,16 +142,6 @@ public class ActivityTrackerTest {
             fail("Exception: " + e);
         }
         */
-    }
-
-    /**
-     * Test the TemplateService for valid rest mapping.
-     * Important for development.
-     */
-    @Test
-    public void testDebugMapping() {
-        ActivityTrackerService cl = new ActivityTrackerService();
-        assertTrue(cl.debugMapping());
     }
 
 }
