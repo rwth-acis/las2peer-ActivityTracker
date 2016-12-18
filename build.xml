@@ -304,12 +304,12 @@
               fork="true">
             <jvmarg value="-Xdebug"/>
             <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5432"/>
-            <arg value='-w'/>
             <arg value='-p'/>
             <arg value='9012'/>
-            <arg value='uploadStartupDirectory(\"etc/startup\")'/>
-            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.1\",\"SampleServicePass\")'/>
+            <arg value='uploadStartupDirectory'/>
+            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.2\",\"SampleServicePass\")'/>
             <arg value='startWebConnector'/>
+            <arg value='interactive'/>
         </java>
     </target>
 
