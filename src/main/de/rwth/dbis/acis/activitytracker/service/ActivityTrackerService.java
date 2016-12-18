@@ -75,6 +75,7 @@ public class ActivityTrackerService extends RESTService {
 
     /**
      * Create Activty over RMI
+     *
      * @param activity as JSON string
      * @return
      * @throws InvocationTargetException
@@ -155,6 +156,8 @@ public class ActivityTrackerService extends RESTService {
                 Gson gson = new Gson();
                 ExecutorService executor = Executors.newCachedThreadPool();
 
+                Map<String, Object> tempObjectStorage = new HashMap<>();
+
                 int getObjectCount = 0;
                 PaginationResult<Activity> activities;
                 List<ActivityEx> activitiesEx = new ArrayList<>();
@@ -167,7 +170,7 @@ public class ActivityTrackerService extends RESTService {
                     if (cursor < 0) {
                         cursor = 0;
                     }
-                    activitiesEx.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activities.getElements()));
+                    activitiesEx.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activities.getElements(), tempObjectStorage));
                 }
 
                 executor.shutdown();
@@ -238,59 +241,63 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
-                                             List<Activity> activities) throws Exception {
+                                             List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
         List<ActivityEx> activitiesEx = new ArrayList<>();
-        Map<Integer, Future<String>> dataFutures = new HashMap<>();
-        Map<Integer, Future<String>> parentDataFutures = new HashMap<>();
-        Map<Integer, Future<String>> userFutures = new HashMap<>();
         JsonParser parser = new JsonParser();
 
         for (int i = 0; i < activities.size(); i++) {
             Activity activity = activities.get(i);
-            if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
-                URIBuilder uriBuilder = new URIBuilder(activity.getDataUrl());
-                URI uri = uriBuilder.build();
-                HttpGet httpget = new HttpGet(uri);
-                if (!authorizationToken.isEmpty()) {
-                    httpget.addHeader("authorization", authorizationToken);
-                }
-                dataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
-            }
-            if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
-                URIBuilder uriBuilder = new URIBuilder(activity.getParentDataUrl());
-                URI uri = uriBuilder.build();
-                HttpGet httpget = new HttpGet(uri);
-                if (!authorizationToken.isEmpty()) {
-                    httpget.addHeader("authorization", authorizationToken);
-                }
-                parentDataFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
-            }
-            if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
-                URIBuilder uriBuilder = new URIBuilder(activity.getUserUrl());
-                URI uri = uriBuilder.build();
-                HttpGet httpget = new HttpGet(uri);
-                if (!authorizationToken.isEmpty()) {
-                    httpget.addHeader("authorization", authorizationToken);
-                }
-                userFutures.put(activity.getId(), executor.submit(new HttpRequestCallable(httpclient, httpget)));
-            }
-        }
+            ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
 
-        for (int i = 0; i < activities.size(); i++) {
             try {
-                Activity activity = activities.get(i);
-                ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
-                Future<String> dataFuture = dataFutures.get(activity.getId());
-                if (dataFuture != null) {
-                    activityEx.setData(parser.parse(dataFuture.get()));
+                if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
+                    if (tempObjectStorage.containsKey(activity.getDataUrl())) {
+                        activityEx.setData(tempObjectStorage.get(activity.getDataUrl()));
+                    } else {
+                        URI uri = new URIBuilder(activity.getDataUrl()).build();
+                        HttpGet httpget = new HttpGet(uri);
+                        if (!authorizationToken.isEmpty()) {
+                            httpget.addHeader("authorization", authorizationToken);
+                        }
+                        Future<String> dataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                        if (dataFuture != null) {
+                            activityEx.setData(parser.parse(dataFuture.get()));
+                            tempObjectStorage.put(activity.getDataUrl(), activityEx.getData());
+                        }
+                    }
                 }
-                Future<String> parentDataFuture = parentDataFutures.get(activity.getId());
-                if (parentDataFuture != null) {
-                    activityEx.setParentData(parser.parse(parentDataFuture.get()));
+                if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
+                    if (tempObjectStorage.containsKey(activity.getParentDataUrl())) {
+                        activityEx.setParentData(tempObjectStorage.get(activity.getParentDataUrl()));
+                    } else {
+
+                        URI uri = new URIBuilder(activity.getParentDataUrl()).build();
+                        HttpGet httpget = new HttpGet(uri);
+                        if (!authorizationToken.isEmpty()) {
+                            httpget.addHeader("authorization", authorizationToken);
+                        }
+                        Future<String> parentDataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                        if (parentDataFuture != null) {
+                            activityEx.setParentData(parser.parse(parentDataFuture.get()));
+                            tempObjectStorage.put(activity.getParentDataUrl(), activityEx.getParentData());
+                        }
+                    }
                 }
-                Future<String> userFuture = userFutures.get(activity.getId());
-                if (userFuture != null) {
-                    activityEx.setUser(parser.parse(userFuture.get()));
+                if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
+                    if (tempObjectStorage.containsKey(activity.getUserUrl())) {
+                        activityEx.setUser(tempObjectStorage.get(activity.getUserUrl()));
+                    } else {
+                        URI uri = new URIBuilder(activity.getUserUrl()).build();
+                        HttpGet httpget = new HttpGet(uri);
+                        if (!authorizationToken.isEmpty()) {
+                            httpget.addHeader("authorization", authorizationToken);
+                        }
+                        Future<String> userFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                        if (userFuture != null) {
+                            activityEx.setUser(parser.parse(userFuture.get()));
+                            tempObjectStorage.put(activity.getUserUrl(), activityEx.getUser());
+                        }
+                    }
                 }
                 activitiesEx.add(activityEx);
             } catch (Exception ex) {
