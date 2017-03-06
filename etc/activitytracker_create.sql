@@ -1,5 +1,7 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS activity;
+
 -- tables
 -- Table activity
 CREATE TABLE IF NOT EXISTS activity (
