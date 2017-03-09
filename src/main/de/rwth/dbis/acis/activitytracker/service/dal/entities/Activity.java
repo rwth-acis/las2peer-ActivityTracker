@@ -13,7 +13,6 @@ public class Activity extends EntityBase {
     private final String parentDataType;
     private final String userUrl;
 
-
     public Date getCreationTime() {
         return creationTime;
     }
