@@ -55,7 +55,7 @@ public class ActivityEx extends Activity {
 
         public BuilderEx activity(Activity activity) {
             id(activity.getId());
-            creationTime(activity.getCreationTime());
+            creationDate(activity.getCreationDate());
             activityAction(activity.getActivityAction());
             dataUrl(activity.getDataUrl());
             dataType(activity.getDataType());
@@ -82,8 +82,8 @@ public class ActivityEx extends Activity {
         }
 
         @Override
-        public BuilderEx creationTime(Date creationTime) {
-            this.creationTime = creationTime;
+        public BuilderEx creationDate(Date creationDate) {
+            this.creationDate = creationDate;
             return this;
         }
 

@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class Activity extends EntityBase {
 
-    private final Date creationTime;
+    private final Date creationDate;
     private final String activityAction;
     private final String dataUrl;
     private final String dataType;
@@ -13,8 +13,8 @@ public class Activity extends EntityBase {
     private final String parentDataType;
     private final String userUrl;
 
-    public Date getCreationTime() {
-        return creationTime;
+    public Date getCreationDate() {
+        return creationDate;
     }
 
     public String getActivityAction() {
@@ -47,7 +47,7 @@ public class Activity extends EntityBase {
 
     protected Activity(Builder builder) {
         super(builder);
-        this.creationTime = builder.creationTime;
+        this.creationDate = builder.creationDate;
         this.activityAction = builder.activityAction;
         this.dataUrl = builder.dataUrl;
         this.dataType = builder.dataType;
@@ -64,7 +64,7 @@ public class Activity extends EntityBase {
     public static class Builder {
 
         protected int id;
-        protected Date creationTime;
+        protected Date creationDate;
         protected String activityAction;
         protected String dataUrl;
         protected String dataType;
@@ -78,8 +78,8 @@ public class Activity extends EntityBase {
             return this;
         }
 
-        public Builder creationTime(Date creationTime) {
-            this.creationTime = creationTime;
+        public Builder creationDate(Date creationDate) {
+            this.creationDate = creationDate;
             return this;
         }
 

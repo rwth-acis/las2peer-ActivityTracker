@@ -2,7 +2,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 TRUNCATE TABLE reqbaztrack.activity;
 
-REPLACE INTO reqbaztrack.activity (id, creation_time, activity_action, data_url, data_type,
+REPLACE INTO reqbaztrack.activity (id, creation_date, activity_action, data_url, data_type,
                                        data_frontend_url, parent_data_url, parent_data_type, user_url)
 VALUES
   (1, '2015-10-21 07:00:00', 'CREATE', 'http://localhost:8080/bazaar/projects/1', 'PROJECT',

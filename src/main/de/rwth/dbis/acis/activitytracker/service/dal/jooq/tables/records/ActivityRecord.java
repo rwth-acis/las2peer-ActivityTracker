@@ -30,33 +30,33 @@ import org.jooq.impl.UpdatableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class ActivityRecord extends UpdatableRecordImpl<ActivityRecord> implements Record9<Integer, Timestamp, String, String, String, String, String, String, String> {
 
-    private static final long serialVersionUID = -1859331784;
+    private static final long serialVersionUID = -1489974951;
 
     /**
-     * Setter for <code>reqbaztrack.activity.Id</code>.
+     * Setter for <code>reqbaztrack.activity.id</code>.
      */
     public void setId(Integer value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>reqbaztrack.activity.Id</code>.
+     * Getter for <code>reqbaztrack.activity.id</code>.
      */
     public Integer getId() {
         return (Integer) get(0);
     }
 
     /**
-     * Setter for <code>reqbaztrack.activity.creation_time</code>.
+     * Setter for <code>reqbaztrack.activity.creation_date</code>.
      */
-    public void setCreationTime(Timestamp value) {
+    public void setCreationDate(Timestamp value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>reqbaztrack.activity.creation_time</code>.
+     * Getter for <code>reqbaztrack.activity.creation_date</code>.
      */
-    public Timestamp getCreationTime() {
+    public Timestamp getCreationDate() {
         return (Timestamp) get(1);
     }
 
@@ -203,7 +203,7 @@ public class ActivityRecord extends UpdatableRecordImpl<ActivityRecord> implemen
      */
     @Override
     public Field<Timestamp> field2() {
-        return Activity.ACTIVITY.CREATION_TIME;
+        return Activity.ACTIVITY.CREATION_DATE;
     }
 
     /**
@@ -275,7 +275,7 @@ public class ActivityRecord extends UpdatableRecordImpl<ActivityRecord> implemen
      */
     @Override
     public Timestamp value2() {
-        return getCreationTime();
+        return getCreationDate();
     }
 
     /**
@@ -348,7 +348,7 @@ public class ActivityRecord extends UpdatableRecordImpl<ActivityRecord> implemen
      */
     @Override
     public ActivityRecord value2(Timestamp value) {
-        setCreationTime(value);
+        setCreationDate(value);
         return this;
     }
 
@@ -446,11 +446,11 @@ public class ActivityRecord extends UpdatableRecordImpl<ActivityRecord> implemen
     /**
      * Create a detached, initialised ActivityRecord
      */
-    public ActivityRecord(Integer id, Timestamp creationTime, String activityAction, String dataUrl, String dataType, String dataFrontendUrl, String parentDataUrl, String parentDataType, String userUrl) {
+    public ActivityRecord(Integer id, Timestamp creationDate, String activityAction, String dataUrl, String dataType, String dataFrontendUrl, String parentDataUrl, String parentDataType, String userUrl) {
         super(Activity.ACTIVITY);
 
         set(0, id);
-        set(1, creationTime);
+        set(1, creationDate);
         set(2, activityAction);
         set(3, dataUrl);
         set(4, dataType);

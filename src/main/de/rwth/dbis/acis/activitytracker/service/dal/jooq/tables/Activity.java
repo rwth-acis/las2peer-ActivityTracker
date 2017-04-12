@@ -36,7 +36,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Activity extends TableImpl<ActivityRecord> {
 
-    private static final long serialVersionUID = -656680500;
+    private static final long serialVersionUID = -1015172083;
 
     /**
      * The reference instance of <code>reqbaztrack.activity</code>
@@ -52,14 +52,14 @@ public class Activity extends TableImpl<ActivityRecord> {
     }
 
     /**
-     * The column <code>reqbaztrack.activity.Id</code>.
+     * The column <code>reqbaztrack.activity.id</code>.
      */
-    public final TableField<ActivityRecord, Integer> ID = createField("Id", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this, "");
+    public final TableField<ActivityRecord, Integer> ID = createField("id", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this, "");
 
     /**
-     * The column <code>reqbaztrack.activity.creation_time</code>.
+     * The column <code>reqbaztrack.activity.creation_date</code>.
      */
-    public final TableField<ActivityRecord, Timestamp> CREATION_TIME = createField("creation_time", org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaultValue(org.jooq.impl.DSL.inline("CURRENT_TIMESTAMP", org.jooq.impl.SQLDataType.TIMESTAMP)), this, "");
+    public final TableField<ActivityRecord, Timestamp> CREATION_DATE = createField("creation_date", org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaultValue(org.jooq.impl.DSL.inline("CURRENT_TIMESTAMP", org.jooq.impl.SQLDataType.TIMESTAMP)), this, "");
 
     /**
      * The column <code>reqbaztrack.activity.activity_action</code>.
