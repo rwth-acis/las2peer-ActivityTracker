@@ -12,7 +12,7 @@ import java.util.Map;
 
 import static de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
 
-public class ActivityTransformator implements Transformator<Activity, ActivityRecord> {
+public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
     @Override
     public ActivityRecord createRecord(Activity entity) {
         ActivityRecord activityRecord = new ActivityRecord();

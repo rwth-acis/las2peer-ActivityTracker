@@ -2,9 +2,9 @@ package de.rwth.dbis.acis.activitytracker.service.exception;
 
 public enum ExceptionLocation {
     REPOSITORY("01", "Repository"),
-    TRANSFORMATOR("02", "Transformator"),
+    TRANSFORMATOR("02", "Transformer"),
     DALFACADE("03", "DAL facade implementation"),
-    ACTIVITIESERVICE("04", "ActivityTracker service"),
+    ACTIVITYTRACKERSERVICE("04", "ActivityTracker service"),
     NETWORK("5", "Network");
 
     private final String code;

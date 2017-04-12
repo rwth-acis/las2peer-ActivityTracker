@@ -8,7 +8,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerExcept
 import java.util.List;
 
 /**
- * @param <E> Type of the Entity, which should be added, deleted, updated, getted using the repo.
+ * @param <E> Type of the Entity, which should be added, deleted, updated, got using the repo.
  */
 public interface Repository<E extends EntityBase> {
     /**

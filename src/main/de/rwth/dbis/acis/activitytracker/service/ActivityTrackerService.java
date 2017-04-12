@@ -74,7 +74,7 @@ public class ActivityTrackerService extends RESTService {
     }
 
     /**
-     * Create Activty over RMI
+     * Create Activity over RMI
      *
      * @param activity as JSON string
      * @return
@@ -141,7 +141,7 @@ public class ActivityTrackerService extends RESTService {
             DALFacade dalFacade = null;
             try {
                 if (before != -1 && after != -1) {
-                    ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITIESERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
+                    ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
                 }
                 int cursor = before != -1 ? before : after;
                 Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
@@ -194,7 +194,7 @@ public class ActivityTrackerService extends RESTService {
             } catch (ActivityTrackerException atException) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             } catch (Exception ex) {
-                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, ex.getMessage());
+                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, ex.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             } finally {
                 service.closeDBConnection(dalFacade);
@@ -233,7 +233,7 @@ public class ActivityTrackerService extends RESTService {
             Activity createdActivity = dalFacade.createActivity(activity);
             return createdActivity;
         } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "");
             throw atException;
         } finally {
             this.closeDBConnection(dalFacade);

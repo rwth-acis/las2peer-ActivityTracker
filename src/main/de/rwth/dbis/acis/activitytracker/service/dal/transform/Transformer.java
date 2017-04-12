@@ -10,7 +10,7 @@ import java.util.Map;
  * @param <E> type parameter for the entity
  * @param <R> type parameter for the record
  */
-public interface Transformator<E, R extends Record> {
+public interface Transformer<E, R extends Record> {
     /**
      * @param entity object, which holds the prototype values for the newly created record.
      * @return a record object, which has the same value of the entity
