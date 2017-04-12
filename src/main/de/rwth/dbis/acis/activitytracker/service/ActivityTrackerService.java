@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * LAS2peer Activity Service
+ * Las2peer Activity Service
  */
 @ServicePath("activities")
 public class ActivityTrackerService extends RESTService {
@@ -293,7 +293,7 @@ public class ActivityTrackerService extends RESTService {
         public Response getActivities(
                 @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
                 @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
-                @ApiParam(value = "Limit of elements of components", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
+                @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
 
             DALFacade dalFacade = null;
@@ -317,7 +317,7 @@ public class ActivityTrackerService extends RESTService {
                 Map<String, Object> tempObjectStorage = new HashMap<>();
 
                 int getObjectCount = 0;
-                PaginationResult<Activity> activitiesPaginationResult = null;
+                PaginationResult<Activity> activitiesPaginationResult;
                 List<Activity> activities = new ArrayList<>();
                 Pageable pageInfo = null;
                 while (activities.size() < limit && getObjectCount < 5) {
