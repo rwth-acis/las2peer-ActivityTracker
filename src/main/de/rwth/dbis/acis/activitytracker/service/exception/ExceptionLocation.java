@@ -10,16 +10,16 @@ public enum ExceptionLocation {
     private final String code;
     private final String message;
 
+    ExceptionLocation(String code, String message) {
+        this.code = code;
+        this.message = message;
+    }
+
     public String asCode() {
         return code;
     }
 
     public String getMessage() {
         return message;
-    }
-
-    ExceptionLocation(String code, String message) {
-        this.code = code;
-        this.message = message;
     }
 }

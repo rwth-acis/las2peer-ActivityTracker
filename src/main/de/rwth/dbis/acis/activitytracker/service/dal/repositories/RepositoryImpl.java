@@ -21,7 +21,7 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
     protected final Transformer<E, R> transformer;
 
     /**
-     * @param jooq          DSLContext for JOOQ connection
+     * @param jooq        DSLContext for JOOQ connection
      * @param transformer Transformer object to create mapping between JOOQ record and our entities
      */
     public RepositoryImpl(DSLContext jooq, Transformer<E, R> transformer) {
@@ -222,10 +222,10 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
             for (Map.Entry<Field, Object> item : map.entrySet()) {
                 Field key = item.getKey();
                 Object value = item.getValue();
-                if(moreStep == null)
+                if (moreStep == null)
                     moreStep = update.set(key, value);
                 else
-                    moreStep.set(key,value);
+                    moreStep.set(key, value);
             }
             assert moreStep != null;
             moreStep.where(transformer.getTableId().equal(entity.getId())).execute();

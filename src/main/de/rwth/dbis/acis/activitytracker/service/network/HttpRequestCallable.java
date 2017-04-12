@@ -59,8 +59,7 @@ public class HttpRequestCallable implements Callable {
             throw ate;
         } catch (Exception e) {
             throw ExceptionHandler.getInstance().convert(e, ExceptionLocation.NETWORK, ErrorCode.UNKNOWN, "");
-        }
-        finally {
+        } finally {
             if (response != null) {
                 response.close();
             }

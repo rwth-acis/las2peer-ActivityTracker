@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class Activity extends EntityBase {
 
+    private final int id;
     private final Date creationDate;
     private final String activityAction;
     private final String dataUrl;
@@ -12,6 +13,32 @@ public class Activity extends EntityBase {
     private final String parentDataUrl;
     private final String parentDataType;
     private final String userUrl;
+    private final Object data;
+    private final Object parentData;
+    private final Object user;
+
+    protected Activity(Builder builder) {
+        this.id = builder.id;
+        this.creationDate = builder.creationDate;
+        this.activityAction = builder.activityAction;
+        this.dataUrl = builder.dataUrl;
+        this.dataType = builder.dataType;
+        this.dataFrontendUrl = builder.dataFrontendUrl;
+        this.parentDataUrl = builder.parentDataUrl;
+        this.parentDataType = builder.parentDataType;
+        this.userUrl = builder.userUrl;
+        this.data = builder.data;
+        this.parentData = builder.parentData;
+        this.user = builder.user;
+    }
+
+    public static Builder getBuilder() {
+        return new Builder();
+    }
+
+    public int getId() {
+        return id;
+    }
 
     public Date getCreationDate() {
         return creationDate;
@@ -45,33 +72,45 @@ public class Activity extends EntityBase {
         return userUrl;
     }
 
-    protected Activity(Builder builder) {
-        super(builder);
-        this.creationDate = builder.creationDate;
-        this.activityAction = builder.activityAction;
-        this.dataUrl = builder.dataUrl;
-        this.dataType = builder.dataType;
-        this.dataFrontendUrl = builder.dataFrontendUrl;
-        this.parentDataUrl = builder.parentDataUrl;
-        this.parentDataType = builder.parentDataType;
-        this.userUrl = builder.userUrl;
+    public Object getData() {
+        return data;
     }
 
-    public static Builder getBuilder() {
-        return new Builder();
+    public Object getParentData() {
+        return parentData;
+    }
+
+    public Object getUser() {
+        return user;
     }
 
     public static class Builder {
 
-        protected int id;
-        protected Date creationDate;
-        protected String activityAction;
-        protected String dataUrl;
-        protected String dataType;
-        protected String dataFrontendUrl;
-        protected String parentDataUrl;
-        protected String parentDataType;
-        protected String userUrl;
+        private int id;
+        private Date creationDate;
+        private String activityAction;
+        private String dataUrl;
+        private String dataType;
+        private String dataFrontendUrl;
+        private String parentDataUrl;
+        private String parentDataType;
+        private String userUrl;
+        private Object data;
+        private Object parentData;
+        private Object user;
+
+        public Builder activity(Activity activity) {
+            id(activity.getId());
+            creationDate(activity.getCreationDate());
+            activityAction(activity.getActivityAction());
+            dataUrl(activity.getDataUrl());
+            dataType(activity.getDataType());
+            dataFrontendUrl(activity.getDataFrontendUrl());
+            parentDataUrl(activity.getParentDataUrl());
+            parentDataType(activity.getParentDataType());
+            userUrl(activity.getUserUrl());
+            return this;
+        }
 
         public Builder id(int id) {
             this.id = id;
@@ -115,6 +154,21 @@ public class Activity extends EntityBase {
 
         public Builder userUrl(String userUrl) {
             this.userUrl = userUrl;
+            return this;
+        }
+
+        public Activity.Builder data(Object data) {
+            this.data = data;
+            return this;
+        }
+
+        public Activity.Builder parentData(Object parentData) {
+            this.parentData = parentData;
+            return this;
+        }
+
+        public Activity.Builder user(Object user) {
+            this.user = user;
             return this;
         }
 

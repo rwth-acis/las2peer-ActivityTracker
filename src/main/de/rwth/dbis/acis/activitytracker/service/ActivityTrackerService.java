@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
-import de.rwth.dbis.acis.activitytracker.service.dal.entities.ActivityEx;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
@@ -52,20 +51,30 @@ import java.util.concurrent.Future;
 @ServicePath("activities")
 public class ActivityTrackerService extends RESTService {
 
+    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
     //CONFIG PROPERTIES
     protected String dbUserName;
     protected String dbPassword;
     protected String dbUrl;
     protected String baseURL;
-
     private DataSource dataSource;
-
-    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
+    }
+
+    private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setUrl(dbUrl);
+        dataSource.setUsername(dbUserName);
+        dataSource.setPassword(dbPassword);
+        dataSource.setValidationQuery("SELECT 1;");
+        dataSource.setTestOnBorrow(true); // test each connection when borrowing from the pool with the validation query
+        dataSource.setMaxConnLifetimeMillis(1000 * 60 * 60); // max connection life time 1h. mysql drops connection after 8h.
+        return dataSource;
     }
 
     @Override
@@ -92,6 +101,155 @@ public class ActivityTrackerService extends RESTService {
         } catch (ActivityTrackerException atException) {
             return new Integer(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).toString();
         }
+    }
+
+    private Activity storeActivity(Activity activity) throws ActivityTrackerException {
+        //TODO validate activity
+        DALFacade dalFacade = null;
+        try {
+            dalFacade = this.getDBConnection();
+            Activity createdActivity = dalFacade.createActivity(activity);
+            return createdActivity;
+        } catch (Exception ex) {
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "");
+            throw atException;
+        } finally {
+            this.closeDBConnection(dalFacade);
+        }
+    }
+
+    private List<Activity> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
+                                             List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
+        List<Activity> activitiesWithObjectBodies = new ArrayList<>();
+        JsonParser parser = new JsonParser();
+
+        for (Activity activity : activities) {
+            Activity.Builder builder = Activity.getBuilder().activity(activity);
+
+            try {
+                if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
+                    if (tempObjectStorage.containsKey(activity.getDataUrl())) {
+                        builder.data(tempObjectStorage.get(activity.getDataUrl()));
+                    } else {
+                        URI uri = new URIBuilder(activity.getDataUrl()).build();
+                        HttpGet httpget = new HttpGet(uri);
+                        if (!authorizationToken.isEmpty()) {
+                            httpget.addHeader("authorization", authorizationToken);
+                        }
+                        Future<String> dataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                        if (dataFuture != null) {
+                            builder.data(parser.parse(dataFuture.get()));
+                            tempObjectStorage.put(activity.getDataUrl(), parser.parse(dataFuture.get()));
+                        }
+                    }
+                }
+                if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
+                    if (tempObjectStorage.containsKey(activity.getParentDataUrl())) {
+                        builder.parentData(tempObjectStorage.get(activity.getParentDataUrl()));
+                    } else {
+
+                        URI uri = new URIBuilder(activity.getParentDataUrl()).build();
+                        HttpGet httpget = new HttpGet(uri);
+                        if (!authorizationToken.isEmpty()) {
+                            httpget.addHeader("authorization", authorizationToken);
+                        }
+                        Future<String> parentDataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                        if (parentDataFuture != null) {
+                            builder.parentData(parser.parse(parentDataFuture.get()));
+                            tempObjectStorage.put(activity.getParentDataUrl(), parser.parse(parentDataFuture.get()));
+                        }
+                    }
+                }
+                if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
+                    if (tempObjectStorage.containsKey(activity.getUserUrl())) {
+                        builder.user(tempObjectStorage.get(activity.getUserUrl()));
+                    } else {
+                        URI uri = new URIBuilder(activity.getUserUrl()).build();
+                        HttpGet httpget = new HttpGet(uri);
+                        if (!authorizationToken.isEmpty()) {
+                            httpget.addHeader("authorization", authorizationToken);
+                        }
+                        Future<String> userFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                        if (userFuture != null) {
+                            builder.user(parser.parse(userFuture.get()));
+                            tempObjectStorage.put(activity.getUserUrl(), userFuture.get());
+                        }
+                    }
+                }
+                activitiesWithObjectBodies.add(builder.build());
+            } catch (Exception ex) {
+                Throwable exCause = ex.getCause();
+                if (exCause instanceof ActivityTrackerException &&
+                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Object not visible for user token or anonymous. Skip object.");
+                } else if (exCause instanceof ActivityTrackerException &&
+                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
+                } else {
+                    throw ex;
+                }
+            }
+        }
+        return activitiesWithObjectBodies;
+    }
+
+    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult, String path, Map<String, String> httpParameter) throws URISyntaxException {
+        List<Link> links = new ArrayList<>();
+
+        URIBuilder uriBuilder = new URIBuilder(baseURL + path);
+        for (Map.Entry<String, String> entry : httpParameter.entrySet()) {
+            uriBuilder.addParameter(entry.getKey(), entry.getValue());
+        }
+        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+            if (paginationResult.getPrevCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build()).rel("prev").build());
+            }
+            if (paginationResult.getNextCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build()).rel("next").build());
+            }
+        } else {
+            if (paginationResult.getNextCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build()).rel("prev").build());
+            }
+            if (paginationResult.getPrevCursor() != -1) {
+                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build()).rel("next").build());
+            }
+        }
+        responseBuilder = responseBuilder.links(links.toArray(new Link[links.size()]));
+        return responseBuilder;
+    }
+
+    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult) {
+        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
+        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
+            if (paginationResult.getPrevCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
+            }
+            if (paginationResult.getNextCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
+            }
+        } else {
+            if (paginationResult.getNextCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
+            }
+            if (paginationResult.getPrevCursor() != -1) {
+                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
+            }
+        }
+        return responseBuilder;
+    }
+
+    public DALFacade getDBConnection() throws Exception {
+        return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
+    }
+
+    public void closeDBConnection(DALFacade dalFacade) {
+        if (dalFacade == null) return;
+        dalFacade.close();
     }
 
     @Api(value = "/activities", description = "Activities resource")
@@ -159,34 +317,34 @@ public class ActivityTrackerService extends RESTService {
                 Map<String, Object> tempObjectStorage = new HashMap<>();
 
                 int getObjectCount = 0;
-                PaginationResult<Activity> activities;
-                List<ActivityEx> activitiesEx = new ArrayList<>();
-                Pageable pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-                while (activitiesEx.size() < limit && getObjectCount < 5) {
+                PaginationResult<Activity> activitiesPaginationResult = null;
+                List<Activity> activities = new ArrayList<>();
+                Pageable pageInfo = null;
+                while (activities.size() < limit && getObjectCount < 5) {
                     pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-                    activities = dalFacade.findActivities(pageInfo);
+                    activitiesPaginationResult = dalFacade.findActivities(pageInfo);
                     getObjectCount++;
                     cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
                     if (cursor < 0) {
                         cursor = 0;
                     }
-                    activitiesEx.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activities.getElements(), tempObjectStorage));
+                    activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
                 }
 
                 executor.shutdown();
-                if (activitiesEx.size() > limit) {
-                    activitiesEx = activitiesEx.subList(0, limit);
+                if (activities.size() > limit) {
+                    activities = activities.subList(0, limit);
                 }
 
-                PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
+                activitiesPaginationResult = new PaginationResult<>(pageInfo, activities);
 
                 Map<String, String> parameter = new HashMap<>();
                 parameter.put("limit", String.valueOf(limit));
 
                 Response.ResponseBuilder responseBuilder = Response.ok();
-                responseBuilder = responseBuilder.entity(gson.toJson(activitiesExResult.getElements()));
-                responseBuilder = service.paginationLinks(responseBuilder, activitiesExResult, "", parameter);
-                responseBuilder = service.xHeaderFields(responseBuilder, activitiesExResult);
+                responseBuilder = responseBuilder.entity(gson.toJson(activitiesPaginationResult.getElements()));
+                responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult, "", parameter);
+                responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult);
                 Response response = responseBuilder.build();
 
                 return response;
@@ -212,7 +370,7 @@ public class ActivityTrackerService extends RESTService {
                 @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
         })
         public Response createActivity(@ApiParam(value = "Activity" +
-                " entity as JSON", required = true) String activity) {
+                " entity as JSON", required = true) String activity) { // TODO:  use Activity Calss and remove gson
             try {
                 Gson gson = new Gson();
                 Activity activityToCreate = gson.fromJson(activity, Activity.class);
@@ -223,169 +381,6 @@ public class ActivityTrackerService extends RESTService {
             }
         }
 
-    }
-
-    private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        //TODO validate activity
-        DALFacade dalFacade = null;
-        try {
-            dalFacade = this.getDBConnection();
-            Activity createdActivity = dalFacade.createActivity(activity);
-            return createdActivity;
-        } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "");
-            throw atException;
-        } finally {
-            this.closeDBConnection(dalFacade);
-        }
-    }
-
-    private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
-                                             List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
-        List<ActivityEx> activitiesEx = new ArrayList<>();
-        JsonParser parser = new JsonParser();
-
-        for (int i = 0; i < activities.size(); i++) {
-            Activity activity = activities.get(i);
-            ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
-
-            try {
-                if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
-                    if (tempObjectStorage.containsKey(activity.getDataUrl())) {
-                        activityEx.setData(tempObjectStorage.get(activity.getDataUrl()));
-                    } else {
-                        URI uri = new URIBuilder(activity.getDataUrl()).build();
-                        HttpGet httpget = new HttpGet(uri);
-                        if (!authorizationToken.isEmpty()) {
-                            httpget.addHeader("authorization", authorizationToken);
-                        }
-                        Future<String> dataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
-                        if (dataFuture != null) {
-                            activityEx.setData(parser.parse(dataFuture.get()));
-                            tempObjectStorage.put(activity.getDataUrl(), activityEx.getData());
-                        }
-                    }
-                }
-                if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
-                    if (tempObjectStorage.containsKey(activity.getParentDataUrl())) {
-                        activityEx.setParentData(tempObjectStorage.get(activity.getParentDataUrl()));
-                    } else {
-
-                        URI uri = new URIBuilder(activity.getParentDataUrl()).build();
-                        HttpGet httpget = new HttpGet(uri);
-                        if (!authorizationToken.isEmpty()) {
-                            httpget.addHeader("authorization", authorizationToken);
-                        }
-                        Future<String> parentDataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
-                        if (parentDataFuture != null) {
-                            activityEx.setParentData(parser.parse(parentDataFuture.get()));
-                            tempObjectStorage.put(activity.getParentDataUrl(), activityEx.getParentData());
-                        }
-                    }
-                }
-                if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
-                    if (tempObjectStorage.containsKey(activity.getUserUrl())) {
-                        activityEx.setUser(tempObjectStorage.get(activity.getUserUrl()));
-                    } else {
-                        URI uri = new URIBuilder(activity.getUserUrl()).build();
-                        HttpGet httpget = new HttpGet(uri);
-                        if (!authorizationToken.isEmpty()) {
-                            httpget.addHeader("authorization", authorizationToken);
-                        }
-                        Future<String> userFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
-                        if (userFuture != null) {
-                            activityEx.setUser(parser.parse(userFuture.get()));
-                            tempObjectStorage.put(activity.getUserUrl(), activityEx.getUser());
-                        }
-                    }
-                }
-                activitiesEx.add(activityEx);
-            } catch (Exception ex) {
-                Throwable exCause = ex.getCause();
-                if (exCause instanceof ActivityTrackerException &&
-                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
-                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Object not visible for user token or anonymous. Skip object.");
-                } else if (exCause instanceof ActivityTrackerException &&
-                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
-                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
-                } else {
-                    throw ex;
-                }
-            }
-        }
-        return activitiesEx;
-    }
-
-    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult, String path, Map<String, String> httpParameter) throws URISyntaxException {
-        List<Link> links = new ArrayList<>();
-
-        URIBuilder uriBuilder = new URIBuilder(baseURL + path);
-        for (Map.Entry<String, String> entry : httpParameter.entrySet()) {
-            uriBuilder.addParameter(entry.getKey(), entry.getValue());
-        }
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build()).rel("prev").build());
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build()).rel("next").build());
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build()).rel("prev").build());
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build()).rel("next").build());
-            }
-        }
-        responseBuilder = responseBuilder.links(links.toArray(new Link[links.size()]));
-        return responseBuilder;
-    }
-
-    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult) {
-        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
-            }
-        }
-        return responseBuilder;
-    }
-
-    private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-        dataSource.setUrl(dbUrl);
-        dataSource.setUsername(dbUserName);
-        dataSource.setPassword(dbPassword);
-        dataSource.setValidationQuery("SELECT 1;");
-        dataSource.setTestOnBorrow(true); // test each connection when borrowing from the pool with the validation query
-        dataSource.setMaxConnLifetimeMillis(1000 * 60 * 60); // max connection life time 1h. mysql drops connection after 8h.
-        return dataSource;
-    }
-
-
-    public DALFacade getDBConnection() throws Exception {
-        return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
-    }
-
-    public void closeDBConnection(DALFacade dalFacade) {
-        if (dalFacade == null) return;
-        dalFacade.close();
     }
 
 }

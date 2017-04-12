@@ -1,24 +1,17 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.security.UserAgent;
 import i5.las2peer.testing.MockAgentFactory;
 import i5.las2peer.webConnector.WebConnector;
-import i5.las2peer.webConnector.client.ClientResponse;
-import i5.las2peer.webConnector.client.MiniClient;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 /**
  * Example Test Class demonstrating a basic JUnit test structure.
@@ -27,18 +20,14 @@ public class ActivityTrackerTest {
 
     private static final String HTTP_ADDRESS = "http://127.0.0.1";
     private static final int HTTP_PORT = WebConnector.DEFAULT_HTTP_PORT;
-
+    private static final String testPass = "adamspass";
+    // during testing, the specified service version does not matter
+    private static final ServiceNameVersion activityTrackerService = new ServiceNameVersion(ActivityTrackerService.class.getCanonicalName(), "1.0");
+    private static final String mainPath = "template/";
     private static LocalNode node;
     private static WebConnector connector;
     private static ByteArrayOutputStream logStream;
-
     private static UserAgent testAgent;
-    private static final String testPass = "adamspass";
-
-    // during testing, the specified service version does not matter
-    private static final ServiceNameVersion activityTrackerService = new ServiceNameVersion(ActivityTrackerService.class.getCanonicalName(), "1.0");
-
-    private static final String mainPath = "template/";
 
     /**
      * Called before the tests start.
@@ -102,7 +91,7 @@ public class ActivityTrackerTest {
     @Test
     public void testGet() {
         /*
-		MiniClient c = new MiniClient();
+        MiniClient c = new MiniClient();
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try
