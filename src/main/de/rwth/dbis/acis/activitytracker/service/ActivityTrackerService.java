@@ -372,9 +372,8 @@ public class ActivityTrackerService extends RESTService {
         public Response createActivity(@ApiParam(value = "Activity" +
                 " entity to create", required = true) Activity activity) {
             try {
-                Gson gson = new Gson();
                 Activity createdActivity = service.storeActivity(activity);
-                return Response.status(Response.Status.CREATED).entity(gson.toJson(createdActivity)).build();
+                return Response.status(Response.Status.CREATED).entity(createdActivity.toJSON()).build();
             } catch (ActivityTrackerException atException) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             }
