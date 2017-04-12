@@ -20,6 +20,7 @@ import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.security.L2pSecurityException;
 import io.swagger.annotations.*;
+import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -104,7 +105,12 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        //TODO validate activity
+        Vtor vtor = new Vtor();
+        vtor.validate(activity);
+        if (vtor.hasViolations()) {
+            ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
+        }
+
         DALFacade dalFacade = null;
         try {
             dalFacade = this.getDBConnection();

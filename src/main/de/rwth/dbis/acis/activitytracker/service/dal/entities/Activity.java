@@ -1,20 +1,45 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
+import jodd.vtor.constraint.MaxLength;
+import jodd.vtor.constraint.NotBlank;
+import jodd.vtor.constraint.NotNull;
+
 import java.util.Date;
 
 public class Activity extends EntityBase {
 
     private int id;
+
+    @NotNull
     private Date creationDate;
+
+    @NotNull
+    @NotBlank
+    @MaxLength(value= 255)
     private String activityAction;
+
+    @MaxLength(value= 255)
     private String dataUrl;
+
+    @MaxLength(value= 255)
     private String dataType;
+
+    @MaxLength(value= 255)
     private String dataFrontendUrl;
+
+    @MaxLength(value= 255)
     private String parentDataUrl;
+
+    @MaxLength(value= 255)
     private String parentDataType;
+
+    @MaxLength(value= 255)
     private String userUrl;
+
     private Object data;
+
     private Object parentData;
+
     private Object user;
 
     public Activity() {

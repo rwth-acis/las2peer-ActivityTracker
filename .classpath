@@ -47,6 +47,9 @@
 	<classpathentry kind="lib" path="lib/jersey-media-multipart-2.1.jar"/>
 	<classpathentry kind="lib" path="lib/jersey-server-2.23.2.jar"/>
 	<classpathentry kind="lib" path="lib/joda-time-2.2.jar"/>
+	<classpathentry kind="lib" path="service/jodd-bean-3.8.5.jar"/>
+	<classpathentry kind="lib" path="service/jodd-core-3.8.5.jar"/>
+	<classpathentry kind="lib" path="service/jodd-vtor-3.8.5.jar"/>
 	<classpathentry kind="lib" path="service/jooq-3.9.1.jar"/>
 	<classpathentry kind="lib" path="service/jooq-codegen-3.9.1.jar"/>
 	<classpathentry kind="lib" path="service/jooq-meta-3.9.1.jar"/>
