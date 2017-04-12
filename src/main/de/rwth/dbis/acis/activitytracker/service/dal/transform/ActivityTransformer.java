@@ -66,13 +66,13 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
     public Collection<? extends SortField<?>> getSortFields(Pageable.SortDirection sortDirection) {
         switch (sortDirection) {
             case DEFAULT:
-                return Arrays.asList(ACTIVITY.CREATION_DATE.desc(),
+                return Arrays.asList(ACTIVITY.ID.desc(),
                         ACTIVITY.ID.desc());
             case ASC:
-                return Arrays.asList(ACTIVITY.CREATION_DATE.asc(),
+                return Arrays.asList(ACTIVITY.ID.asc(),
                         ACTIVITY.ID.asc());
             case DESC:
-                return Arrays.asList(ACTIVITY.CREATION_DATE.desc(),
+                return Arrays.asList(ACTIVITY.ID.desc(),
                         ACTIVITY.ID.desc());
         }
         return null;
