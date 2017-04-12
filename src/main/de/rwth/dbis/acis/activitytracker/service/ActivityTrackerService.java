@@ -96,7 +96,7 @@ public class ActivityTrackerService extends RESTService {
         try {
             Gson gson = new Gson();
             Activity activityToCreate = gson.fromJson(activity, Activity.class);
-            Activity createdActivity = this.storeActivity(activityToCreate);
+            this.storeActivity(activityToCreate);
             return new Integer(Response.Status.CREATED.getStatusCode()).toString();
         } catch (ActivityTrackerException atException) {
             return new Integer(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).toString();
@@ -255,9 +255,9 @@ public class ActivityTrackerService extends RESTService {
     @Api(value = "/activities", description = "Activities resource")
     @SwaggerDefinition(
             info = @Info(
-                    title = "LAS2peer Activity Service",
+                    title = "las2peer Activity Service",
                     version = "0.2",
-                    description = "An activity tracker for LAS2peer and other web services.",
+                    description = "An activity tracker for las2peer and other web services.",
                     termsOfService = "http://requirements-bazaar.org",
                     contact = @Contact(
                             name = "Requirements Bazaar Dev Team",
@@ -370,11 +370,10 @@ public class ActivityTrackerService extends RESTService {
                 @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
         })
         public Response createActivity(@ApiParam(value = "Activity" +
-                " entity as JSON", required = true) String activity) { // TODO:  use Activity Calss and remove gson
+                " entity to create", required = true) Activity activity) {
             try {
                 Gson gson = new Gson();
-                Activity activityToCreate = gson.fromJson(activity, Activity.class);
-                Activity createdActivity = service.storeActivity(activityToCreate);
+                Activity createdActivity = service.storeActivity(activity);
                 return Response.status(Response.Status.CREATED).entity(gson.toJson(createdActivity)).build();
             } catch (ActivityTrackerException atException) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();

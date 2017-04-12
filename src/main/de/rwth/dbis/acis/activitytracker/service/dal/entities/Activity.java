@@ -4,18 +4,21 @@ import java.util.Date;
 
 public class Activity extends EntityBase {
 
-    private final int id;
-    private final Date creationDate;
-    private final String activityAction;
-    private final String dataUrl;
-    private final String dataType;
-    private final String dataFrontendUrl;
-    private final String parentDataUrl;
-    private final String parentDataType;
-    private final String userUrl;
-    private final Object data;
-    private final Object parentData;
-    private final Object user;
+    private int id;
+    private Date creationDate;
+    private String activityAction;
+    private String dataUrl;
+    private String dataType;
+    private String dataFrontendUrl;
+    private String parentDataUrl;
+    private String parentDataType;
+    private String userUrl;
+    private Object data;
+    private Object parentData;
+    private Object user;
+
+    public Activity() {
+    }
 
     protected Activity(Builder builder) {
         this.id = builder.id;
