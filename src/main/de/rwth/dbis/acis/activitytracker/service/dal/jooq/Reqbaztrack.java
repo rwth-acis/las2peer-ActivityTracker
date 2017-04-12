@@ -5,16 +5,14 @@ package de.rwth.dbis.acis.activitytracker.service.dal.jooq;
 
 
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.annotation.Generated;
-
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
+
+import javax.annotation.Generated;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**

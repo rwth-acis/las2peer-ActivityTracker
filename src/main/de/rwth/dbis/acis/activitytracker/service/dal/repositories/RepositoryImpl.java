@@ -9,7 +9,6 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import org.jooq.*;
-import org.jooq.Condition;
 import org.jooq.exception.DataAccessException;
 
 import java.util.ArrayList;

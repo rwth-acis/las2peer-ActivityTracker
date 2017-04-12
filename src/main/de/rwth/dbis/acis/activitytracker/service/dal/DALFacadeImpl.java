@@ -6,11 +6,11 @@ import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
 import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityRepository;
 import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityRepositoryImpl;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
-import org.jooq.*;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
 import javax.sql.DataSource;
-import java.util.List;
 
 public class DALFacadeImpl implements DALFacade {
 

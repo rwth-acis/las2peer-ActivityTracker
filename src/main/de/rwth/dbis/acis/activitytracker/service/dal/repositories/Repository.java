@@ -16,7 +16,7 @@ public interface Repository<E extends EntityBase> {
      * @return the persisted entity
      * @throws ActivityTrackerException
      */
-    public E add(E entity) throws ActivityTrackerException;
+    E add(E entity) throws ActivityTrackerException;
 
 
     /**
@@ -24,14 +24,14 @@ public interface Repository<E extends EntityBase> {
      * @return the deleted entity. It is not anymore in the database!
      * @throws ActivityTrackerException
      */
-    public E delete(int id) throws ActivityTrackerException;
+    E delete(int id) throws ActivityTrackerException;
 
 
     /**
      * @return all the entities currently in the database
      * @throws ActivityTrackerException
      */
-    public List<E> findAll() throws ActivityTrackerException;
+    List<E> findAll() throws ActivityTrackerException;
 
 
     /**
@@ -39,7 +39,7 @@ public interface Repository<E extends EntityBase> {
      * @return PaginationResult with all the entities currently in the database
      * @throws ActivityTrackerException
      */
-    public PaginationResult<E> findAll(Pageable pageable) throws ActivityTrackerException;
+    PaginationResult<E> findAll(Pageable pageable) throws ActivityTrackerException;
 
 
     /**
@@ -48,14 +48,14 @@ public interface Repository<E extends EntityBase> {
      * @return PaginationResult with all the entities currently in the database matching the searchTerm
      * @throws ActivityTrackerException
      */
-    public PaginationResult<E> searchAll(String searchTerm, Pageable pageable) throws ActivityTrackerException;
+    PaginationResult<E> searchAll(String searchTerm, Pageable pageable) throws ActivityTrackerException;
 
     /**
      * @param id of the entity we are looking for
      * @return the entity from the database with the given Id
      * @throws ActivityTrackerException
      */
-    public E findById(int id) throws ActivityTrackerException;
+    E findById(int id) throws ActivityTrackerException;
 
 
     /**
@@ -63,5 +63,5 @@ public interface Repository<E extends EntityBase> {
      * @return the entity after the database
      * @throws ActivityTrackerException
      */
-    public E update(E entity) throws ActivityTrackerException;
+    E update(E entity) throws ActivityTrackerException;
 }

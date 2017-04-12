@@ -1,7 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.*;
+import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
 import org.jooq.*;
 

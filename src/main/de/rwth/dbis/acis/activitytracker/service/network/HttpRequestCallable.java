@@ -1,11 +1,9 @@
 package de.rwth.dbis.acis.activitytracker.service.network;
 
-import de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
-import i5.las2peer.logging.L2pLogger;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
@@ -18,7 +16,6 @@ import org.apache.http.protocol.HttpContext;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.util.concurrent.Callable;
-import java.util.logging.Level;
 
 public class HttpRequestCallable implements Callable {
 

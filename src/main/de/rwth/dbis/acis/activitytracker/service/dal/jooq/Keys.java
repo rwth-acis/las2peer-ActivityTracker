@@ -6,12 +6,11 @@ package de.rwth.dbis.acis.activitytracker.service.dal.jooq;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
-
-import javax.annotation.Generated;
-
 import org.jooq.Identity;
 import org.jooq.UniqueKey;
 import org.jooq.impl.AbstractKeys;
+
+import javax.annotation.Generated;
 
 
 /**

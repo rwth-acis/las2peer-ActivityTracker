@@ -21,7 +21,7 @@ import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.security.L2pSecurityException;
 import io.swagger.annotations.*;
-import org.apache.commons.dbcp2.*;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
