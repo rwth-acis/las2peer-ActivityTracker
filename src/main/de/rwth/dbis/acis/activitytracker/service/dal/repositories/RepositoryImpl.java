@@ -121,6 +121,7 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
 
             List<R> queryResults = jooq.selectFrom(transformer.getTable())
                     .where(transformer.getFilterConditions(pageable.getFilters()))
+                    .and(transformer.getSearchCondition(pageable.getSearch()))
                     .and(cursorCondition)
                     .orderBy(transformer.getSortFields(pageable.getSortDirection()))
                     .limit(pageable.getLimit())
@@ -134,49 +135,6 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
             result = new PaginationResult<>(pageable, entries);
         } catch (Exception e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN, e.getMessage());
-        }
-
-        return result;
-    }
-
-    /**
-     * @param searchTerm
-     * @param pageable
-     * @return PaginationResult with all the entities currently in the database matching the searchTerm
-     * @throws ActivityTrackerException
-     */
-    @Override
-    public PaginationResult<E> searchAll(String searchTerm, Pageable pageable) throws ActivityTrackerException {
-        PaginationResult<E> result = null;
-        try {
-            List<E> entries = new ArrayList<>();
-
-            Condition condition = transformer.getTableId().notEqual(-1);
-            if (pageable.getCursor() != -1) {
-                if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
-                    condition = transformer.getTableId().greaterThan(pageable.getCursor());
-                } else {
-                    condition = transformer.getTableId().lessThan(pageable.getCursor());
-                }
-            }
-            String likeExpression = "%" + searchTerm + "%";
-
-            List<R> queryResults = jooq.selectFrom(transformer.getTable())
-                    .where(transformer.getSearchFields(likeExpression)).and(condition)
-                    .orderBy(transformer.getSortFields(pageable.getSortDirection()))
-                    .limit(pageable.getLimit())
-                    .fetchInto(transformer.getRecordClass());
-
-            for (R queryResult : queryResults) {
-                E entry = transformer.mapToEntity(queryResult);
-                entries.add(entry);
-            }
-
-            result = new PaginationResult<>(pageable, entries);
-        } catch (ActivityTrackerException ex) {
-            ExceptionHandler.getInstance().convertAndThrowException(ex);
-        } catch (Exception e) {
-            ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN);
         }
 
         return result;

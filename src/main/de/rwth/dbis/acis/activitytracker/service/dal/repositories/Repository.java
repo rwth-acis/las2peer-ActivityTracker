@@ -41,15 +41,6 @@ public interface Repository<E extends EntityBase> {
      */
     PaginationResult<E> findAll(Pageable pageable) throws ActivityTrackerException;
 
-
-    /**
-     * @param searchTerm
-     * @param pageable
-     * @return PaginationResult with all the entities currently in the database matching the searchTerm
-     * @throws ActivityTrackerException
-     */
-    PaginationResult<E> searchAll(String searchTerm, Pageable pageable) throws ActivityTrackerException;
-
     /**
      * @param id of the entity we are looking for
      * @return the entity from the database with the given Id

@@ -11,6 +11,8 @@ public interface Pageable {
 
     SortDirection getSortDirection();
 
+    String getSearch();
+
     enum SortDirection {
         DEFAULT, ASC, DESC
     }

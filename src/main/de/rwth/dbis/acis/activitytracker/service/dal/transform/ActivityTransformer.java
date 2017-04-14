@@ -78,11 +78,9 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
     }
 
     @Override
-    public Collection<? extends Condition> getSearchFields(String likeExpression) throws Exception {
-        return Arrays.asList(
-                ACTIVITY.ACTIVITY_ACTION.likeIgnoreCase(likeExpression)
-                        .or(ACTIVITY.DATA_TYPE.likeIgnoreCase(likeExpression))
-        );
+    public Condition getSearchCondition(String search) throws Exception {
+        return ACTIVITY.ACTIVITY_ACTION.likeIgnoreCase("%" + search + "%")
+                .or(ACTIVITY.DATA_TYPE.likeIgnoreCase("%" + search + "%"));
     }
 
     @Override

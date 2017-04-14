@@ -300,6 +300,7 @@ public class ActivityTrackerService extends RESTService {
                 @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
                 @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
                 @ApiParam(value = "Parameter to include or exclude the child elements 'data', 'parentData' and 'user'", required = false, allowableValues = "true, false") @DefaultValue("true") @QueryParam("fillChildElements") boolean fillChildElements,
+                @ApiParam(value = "Search string", required = false) @QueryParam("search") String search,
                 @ApiParam(value = "activityAction filter", required = false) @QueryParam("activityAction") String activityActionFilter,
                 @ApiParam(value = "origin filter", required = false) @QueryParam("origin") String originFilter,
                 @ApiParam(value = "dataType filter", required = false) @QueryParam("dataType") String dataTypeFilter,
@@ -357,7 +358,7 @@ public class ActivityTrackerService extends RESTService {
                 List<Activity> activities = new ArrayList<>();
                 Pageable pageInfo = null;
                 while (activities.size() < limit && getObjectCount < 5) {
-                    pageInfo = new PageInfo(cursor, limit, filters, sortDirection);
+                    pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
                     activitiesPaginationResult = dalFacade.findActivities(pageInfo);
                     getObjectCount++;
                     cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
@@ -403,6 +404,9 @@ public class ActivityTrackerService extends RESTService {
                 }
                 if (userUrlFilter != null) {
                     parameter.put("userURL", userUrlFilter);
+                }
+                if (search != null) {
+                    parameter.put("search", search);
                 }
 
                 Gson gson = new Gson();
