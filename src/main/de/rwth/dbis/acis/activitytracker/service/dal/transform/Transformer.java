@@ -54,7 +54,17 @@ public interface Transformer<E, R extends Record> {
      */
     Collection<? extends SortField<?>> getSortFields(Pageable.SortDirection sortDirection);
 
+    /**
+     * @param likeExpression
+     * @return condition to fields.
+     */
     Collection<? extends Condition> getSearchFields(String likeExpression) throws Exception;
+
+    /**
+     * @param filters
+     * @return a collection of conditions to filter.
+     */
+    Collection<? extends Condition> getFilterConditions(Map<String, String> filters) throws Exception;
 
 
 }

@@ -295,12 +295,18 @@ public class ActivityTrackerService extends RESTService {
                 @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
                 @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
         })
-        //TODO add filter for: activityAction, origin, dataType, parentDataType, parentDataUrl, dataUrl, userURL
         public Response getActivities(
                 @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
                 @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
                 @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
                 @ApiParam(value = "Parameter to include or exclude the child elements 'data', 'parentData' and 'user'", required = false, allowableValues = "true, false") @DefaultValue("true") @QueryParam("fillChildElements") boolean fillChildElements,
+                @ApiParam(value = "activityAction filter", required = false) @QueryParam("activityAction") String activityActionFilter,
+                @ApiParam(value = "origin filter", required = false) @QueryParam("origin") String originFilter,
+                @ApiParam(value = "dataType filter", required = false) @QueryParam("dataType") String dataTypeFilter,
+                @ApiParam(value = "dataUrl filter", required = false) @QueryParam("dataUrl") String dataUrlFilter,
+                @ApiParam(value = "parentDataType filter", required = false) @QueryParam("parentDataType") String parentDataTypeFilter,
+                @ApiParam(value = "parentDataUrl filter", required = false) @QueryParam("parentDataUrl") String parentDataUrlFilter,
+                @ApiParam(value = "userUrl filter", required = false) @QueryParam("userUrl") String userUrlFilter,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
 
             DALFacade dalFacade = null;
@@ -310,6 +316,29 @@ public class ActivityTrackerService extends RESTService {
                 }
                 int cursor = before != -1 ? before : after;
                 Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
+
+                HashMap<String, String> filters = new HashMap<>();
+                if (activityActionFilter != null) {
+                    filters.put("activityAction", activityActionFilter);
+                }
+                if (originFilter != null) {
+                    filters.put("origin", originFilter);
+                }
+                if (dataTypeFilter != null) {
+                    filters.put("dataType", dataTypeFilter);
+                }
+                if (dataUrlFilter != null) {
+                    filters.put("dataUrl", dataUrlFilter);
+                }
+                if (parentDataTypeFilter != null) {
+                    filters.put("parentDataType", parentDataTypeFilter);
+                }
+                if (parentDataUrlFilter != null) {
+                    filters.put("parentDataUrl", parentDataUrlFilter);
+                }
+                if (userUrlFilter != null) {
+                    filters.put("userUrl", userUrlFilter);
+                }
 
                 dalFacade = service.getDBConnection();
 
@@ -328,7 +357,7 @@ public class ActivityTrackerService extends RESTService {
                 List<Activity> activities = new ArrayList<>();
                 Pageable pageInfo = null;
                 while (activities.size() < limit && getObjectCount < 5) {
-                    pageInfo = new PageInfo(cursor, limit, "", sortDirection);
+                    pageInfo = new PageInfo(cursor, limit, filters, sortDirection);
                     activitiesPaginationResult = dalFacade.findActivities(pageInfo);
                     getObjectCount++;
                     cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
@@ -351,6 +380,30 @@ public class ActivityTrackerService extends RESTService {
 
                 Map<String, String> parameter = new HashMap<>();
                 parameter.put("limit", String.valueOf(limit));
+                if (fillChildElements == false) {
+                    parameter.put("fillChildElements", String.valueOf(fillChildElements));
+                }
+                if (activityActionFilter != null) {
+                    parameter.put("activityActionFilter", activityActionFilter);
+                }
+                if (originFilter != null) {
+                    parameter.put("origin", originFilter);
+                }
+                if (dataTypeFilter != null) {
+                    parameter.put("dataType", dataTypeFilter);
+                }
+                if (dataUrlFilter != null) {
+                    parameter.put("dataUrl", dataUrlFilter);
+                }
+                if (parentDataTypeFilter != null) {
+                    parameter.put("parentDataType", parentDataTypeFilter);
+                }
+                if (parentDataUrlFilter != null) {
+                    parameter.put("parentDataUrl", parentDataUrlFilter);
+                }
+                if (userUrlFilter != null) {
+                    parameter.put("userURL", userUrlFilter);
+                }
 
                 Gson gson = new Gson();
 

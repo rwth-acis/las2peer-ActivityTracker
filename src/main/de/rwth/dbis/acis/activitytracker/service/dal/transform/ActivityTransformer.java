@@ -5,10 +5,7 @@ import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
 import org.jooq.*;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
 
@@ -86,5 +83,34 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 ACTIVITY.ACTIVITY_ACTION.likeIgnoreCase(likeExpression)
                         .or(ACTIVITY.DATA_TYPE.likeIgnoreCase(likeExpression))
         );
+    }
+
+    @Override
+    public Collection<? extends Condition> getFilterConditions(Map<String, String> filters) throws Exception {
+        List<Condition> conditions = new ArrayList<>();
+        for (Map.Entry<String, String> filterEntry : filters.entrySet()) {
+            if (filterEntry.getKey().equals("activityAction")) {
+                conditions.add(ACTIVITY.ACTIVITY_ACTION.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("origin")) {
+                conditions.add(ACTIVITY.ORIGIN.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("dataType")) {
+                conditions.add(ACTIVITY.DATA_TYPE.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("dataUrl")) {
+                conditions.add(ACTIVITY.DATA_URL.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("parentDataType")) {
+                conditions.add(ACTIVITY.PARENT_DATA_TYPE.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("parentDataUrl")) {
+                conditions.add(ACTIVITY.PARENT_DATA_URL.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("userUrl")) {
+                conditions.add(ACTIVITY.USER_URL.equalIgnoreCase(filterEntry.getValue()));
+            }
+        }
+        return conditions;
     }
 }

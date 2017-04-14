@@ -1,11 +1,13 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.helpers;
 
+import java.util.Map;
+
 public interface Pageable {
     int getCursor();
 
     int getLimit();
 
-    String getFilter();
+    Map<String, String> getFilters();
 
     SortDirection getSortDirection();
 

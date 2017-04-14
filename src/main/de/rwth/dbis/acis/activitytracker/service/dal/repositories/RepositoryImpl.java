@@ -110,17 +110,18 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
         try {
             List<E> entries = new ArrayList<>();
 
-            Condition condition = transformer.getTableId().notEqual(-1);
+            Condition cursorCondition = transformer.getTableId().notEqual(-1);
             if (pageable.getCursor() != -1) {
                 if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
-                    condition = transformer.getTableId().greaterThan(pageable.getCursor());
+                    cursorCondition = transformer.getTableId().greaterThan(pageable.getCursor());
                 } else {
-                    condition = transformer.getTableId().lessThan(pageable.getCursor());
+                    cursorCondition = transformer.getTableId().lessThan(pageable.getCursor());
                 }
             }
 
             List<R> queryResults = jooq.selectFrom(transformer.getTable())
-                    .where(condition)
+                    .where(transformer.getFilterConditions(pageable.getFilters()))
+                    .and(cursorCondition)
                     .orderBy(transformer.getSortFields(pageable.getSortDirection()))
                     .limit(pageable.getLimit())
                     .fetchInto(transformer.getRecordClass());
@@ -131,7 +132,7 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
             }
 
             result = new PaginationResult<>(pageable, entries);
-        } catch (DataAccessException e) {
+        } catch (Exception e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN, e.getMessage());
         }
 
