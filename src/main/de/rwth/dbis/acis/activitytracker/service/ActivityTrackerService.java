@@ -125,7 +125,7 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private List<Activity> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
-                                             List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
+                                           List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
         List<Activity> activitiesWithObjectBodies = new ArrayList<>();
         JsonParser parser = new JsonParser();
 
@@ -178,7 +178,7 @@ public class ActivityTrackerService extends RESTService {
                         Future<String> userFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
                         if (userFuture != null) {
                             builder.user(parser.parse(userFuture.get()));
-                            tempObjectStorage.put(activity.getUserUrl(), userFuture.get());
+                            tempObjectStorage.put(activity.getUserUrl(), parser.parse(userFuture.get()));
                         }
                     }
                 }
@@ -300,6 +300,7 @@ public class ActivityTrackerService extends RESTService {
                 @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
                 @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
                 @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
+                @ApiParam(value = "Parameter to include or exclude the child elements 'data', 'parentData' and 'user'", required = false, allowableValues = "true, false") @DefaultValue("true") @QueryParam("fillChildElements") boolean fillChildElements,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
 
             DALFacade dalFacade = null;
@@ -310,14 +311,14 @@ public class ActivityTrackerService extends RESTService {
                 int cursor = before != -1 ? before : after;
                 Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
 
+                dalFacade = service.getDBConnection();
+
                 PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
                 cm.setMaxTotal(20);
                 CloseableHttpClient httpclient = HttpClients.custom()
                         .setConnectionManager(cm)
                         .build();
 
-                dalFacade = service.getDBConnection();
-                Gson gson = new Gson();
                 ExecutorService executor = Executors.newCachedThreadPool();
 
                 Map<String, Object> tempObjectStorage = new HashMap<>();
@@ -334,7 +335,11 @@ public class ActivityTrackerService extends RESTService {
                     if (cursor < 0) {
                         cursor = 0;
                     }
-                    activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
+                    if (fillChildElements) {
+                        activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
+                    } else {
+                        activities.addAll(activitiesPaginationResult.getElements());
+                    }
                 }
 
                 executor.shutdown();
@@ -346,6 +351,8 @@ public class ActivityTrackerService extends RESTService {
 
                 Map<String, String> parameter = new HashMap<>();
                 parameter.put("limit", String.valueOf(limit));
+
+                Gson gson = new Gson();
 
                 Response.ResponseBuilder responseBuilder = Response.ok();
                 responseBuilder = responseBuilder.entity(gson.toJson(activitiesPaginationResult.getElements()));
