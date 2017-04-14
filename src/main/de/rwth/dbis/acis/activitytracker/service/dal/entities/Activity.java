@@ -18,6 +18,11 @@ public class Activity extends EntityBase {
     @MaxLength(value= 255)
     private String activityAction;
 
+    @NotNull
+    @NotBlank
+    @MaxLength(value= 255)
+    private String origin;
+
     @MaxLength(value= 255)
     private String dataUrl;
 
@@ -49,6 +54,7 @@ public class Activity extends EntityBase {
         this.id = builder.id;
         this.creationDate = builder.creationDate;
         this.activityAction = builder.activityAction;
+        this.origin = builder.origin;
         this.dataUrl = builder.dataUrl;
         this.dataType = builder.dataType;
         this.dataFrontendUrl = builder.dataFrontendUrl;
@@ -74,6 +80,10 @@ public class Activity extends EntityBase {
 
     public String getActivityAction() {
         return activityAction;
+    }
+
+    public String getOrigin() {
+        return origin;
     }
 
     public String getDataUrl() {
@@ -117,6 +127,7 @@ public class Activity extends EntityBase {
         private int id;
         private Date creationDate;
         private String activityAction;
+        private String origin;
         private String dataUrl;
         private String dataType;
         private String dataFrontendUrl;
@@ -131,6 +142,7 @@ public class Activity extends EntityBase {
             id(activity.getId());
             creationDate(activity.getCreationDate());
             activityAction(activity.getActivityAction());
+            origin(activity.getOrigin());
             dataUrl(activity.getDataUrl());
             dataType(activity.getDataType());
             dataFrontendUrl(activity.getDataFrontendUrl());
@@ -152,6 +164,11 @@ public class Activity extends EntityBase {
 
         public Builder activityAction(String activityAction) {
             this.activityAction = activityAction;
+            return this;
+        }
+
+        public Builder origin(String origin) {
+            this.origin = origin;
             return this;
         }
 

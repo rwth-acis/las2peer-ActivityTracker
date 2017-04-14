@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS reqbaztrack.activity (
   id                INT          NOT NULL  AUTO_INCREMENT,
   creation_date     TIMESTAMP    NOT NULL  DEFAULT CURRENT_TIMESTAMP,
   activity_action   VARCHAR(255) NOT NULL,
+  origin            VARCHAR(255) NOT NULL,
   data_url          VARCHAR(255) NULL,
   data_type         VARCHAR(255) NULL,
   data_frontend_url VARCHAR(255) NULL,

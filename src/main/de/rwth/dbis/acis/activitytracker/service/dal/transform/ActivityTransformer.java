@@ -18,6 +18,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         ActivityRecord activityRecord = new ActivityRecord();
         activityRecord.setCreationDate(new java.sql.Timestamp(entity.getCreationDate().getTime()));
         activityRecord.setActivityAction(entity.getActivityAction());
+        activityRecord.setOrigin(entity.getOrigin());
         activityRecord.setDataUrl(entity.getDataUrl());
         activityRecord.setDataType(entity.getDataType());
         activityRecord.setDataFrontendUrl(entity.getDataFrontendUrl());
@@ -33,6 +34,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 .id(record.getId())
                 .creationDate(record.getCreationDate())
                 .activityAction(record.getActivityAction())
+                .origin(record.getOrigin())
                 .dataUrl(record.getDataUrl())
                 .dataType(record.getDataType())
                 .dataFrontendUrl(record.getDataFrontendUrl())

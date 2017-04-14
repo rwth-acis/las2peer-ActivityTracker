@@ -295,7 +295,7 @@ public class ActivityTrackerService extends RESTService {
                 @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
                 @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
         })
-        //TODO add filter
+        //TODO add filter for: activityAction, origin, dataType, parentDataType, parentDataUrl, dataUrl, userURL
         public Response getActivities(
                 @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
                 @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
