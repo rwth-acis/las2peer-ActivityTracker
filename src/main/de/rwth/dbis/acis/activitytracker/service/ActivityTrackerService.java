@@ -100,6 +100,7 @@ public class ActivityTrackerService extends RESTService {
             this.storeActivity(activityToCreate);
             return new Integer(Response.Status.CREATED.getStatusCode()).toString();
         } catch (ActivityTrackerException atException) {
+            logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
             return new Integer(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).toString();
         }
     }
@@ -420,9 +421,11 @@ public class ActivityTrackerService extends RESTService {
                 return response;
 
             } catch (ActivityTrackerException atException) {
+                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             } catch (Exception ex) {
                 ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, ex.getMessage());
+                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             } finally {
                 service.closeDBConnection(dalFacade);
@@ -445,6 +448,7 @@ public class ActivityTrackerService extends RESTService {
                 Activity createdActivity = service.storeActivity(activity);
                 return Response.status(Response.Status.CREATED).entity(createdActivity.toJSON()).build();
             } catch (ActivityTrackerException atException) {
+                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             }
         }
