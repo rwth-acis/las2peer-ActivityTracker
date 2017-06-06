@@ -306,8 +306,12 @@
             <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5432"/>
             <arg value='-p'/>
             <arg value='9012'/>
+            <!--
+            <arg value='-b'/>
+            <arg value='192.168.178.21:9011'/>
+            -->
             <arg value='uploadStartupDirectory'/>
-            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.2\",\"SampleServicePass\")'/>
+            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.2\",\"Passphrase\")'/>
             <arg value='startWebConnector'/>
             <arg value='interactive'/>
         </java>

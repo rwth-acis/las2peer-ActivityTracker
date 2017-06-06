@@ -3,32 +3,30 @@ package de.rwth.dbis.acis.activitytracker.service.dal.repositories;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.EntityBase;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
-import de.rwth.dbis.acis.activitytracker.service.dal.transform.Transformator;
+import de.rwth.dbis.acis.activitytracker.service.dal.transform.Transformer;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import org.jooq.*;
-import org.jooq.Condition;
 import org.jooq.exception.DataAccessException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.*;
 
 public class RepositoryImpl<E extends EntityBase, R extends Record> implements Repository<E> {
 
     protected final DSLContext jooq;
-    protected final Transformator<E, R> transformator;
+    protected final Transformer<E, R> transformer;
 
     /**
-     * @param jooq          DSLContext for JOOQ connection
-     * @param transformator Transformator object to create mapping between JOOQ record and our entities
+     * @param jooq        DSLContext for JOOQ connection
+     * @param transformer Transformer object to create mapping between JOOQ record and our entities
      */
-    public RepositoryImpl(DSLContext jooq, Transformator<E, R> transformator) {
+    public RepositoryImpl(DSLContext jooq, Transformer<E, R> transformer) {
         this.jooq = jooq;
-        this.transformator = transformator;
+        this.transformer = transformer;
     }
 
     /**
@@ -41,12 +39,12 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
         E transformedEntity = null;
         try {
             R persisted;
-            persisted = jooq.insertInto(transformator.getTable())
-                    .set(transformator.createRecord(entity))
+            persisted = jooq.insertInto(transformer.getTable())
+                    .set(transformer.createRecord(entity))
                     .returning()
                     .fetchOne();
 
-            transformedEntity = transformator.mapToEntity(persisted);
+            transformedEntity = transformer.mapToEntity(persisted);
         } catch (DataAccessException e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN, e.getMessage());
         }
@@ -66,8 +64,8 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
         try {
             deleted = this.findById(id);
 
-            int deletedRecordCount = jooq.delete(transformator.getTable())
-                    .where(transformator.getTableId().equal(id))
+            int deletedRecordCount = jooq.delete(transformer.getTable())
+                    .where(transformer.getTableId().equal(id))
                     .execute();
         } catch (ActivityTrackerException ex) {
             ExceptionHandler.getInstance().convertAndThrowException(ex);
@@ -88,10 +86,10 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
         try {
             entries = new ArrayList<>();
 
-            List<R> queryResults = jooq.selectFrom(transformator.getTable()).fetchInto(transformator.getRecordClass());
+            List<R> queryResults = jooq.selectFrom(transformer.getTable()).fetchInto(transformer.getRecordClass());
 
             for (R queryResult : queryResults) {
-                E entry = transformator.mapToEntity(queryResult);
+                E entry = transformer.mapToEntity(queryResult);
                 entries.add(entry);
             }
         } catch (DataAccessException e) {
@@ -112,72 +110,31 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
         try {
             List<E> entries = new ArrayList<>();
 
-            Condition condition = transformator.getTableId().notEqual(-1);
+            Condition cursorCondition = transformer.getTableId().notEqual(-1);
             if (pageable.getCursor() != -1) {
                 if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
-                    condition = transformator.getTableId().greaterThan(pageable.getCursor());
+                    cursorCondition = transformer.getTableId().greaterThan(pageable.getCursor());
                 } else {
-                    condition = transformator.getTableId().lessThan(pageable.getCursor());
+                    cursorCondition = transformer.getTableId().lessThan(pageable.getCursor());
                 }
             }
 
-            List<R> queryResults = jooq.selectFrom(transformator.getTable())
-                    .where(condition)
-                    .orderBy(transformator.getSortFields(pageable.getSortDirection()))
+            List<R> queryResults = jooq.selectFrom(transformer.getTable())
+                    .where(transformer.getFilterConditions(pageable.getFilters()))
+                    .and(transformer.getSearchCondition(pageable.getSearch()))
+                    .and(cursorCondition)
+                    .orderBy(transformer.getSortFields(pageable.getSortDirection()))
                     .limit(pageable.getLimit())
-                    .fetchInto(transformator.getRecordClass());
+                    .fetchInto(transformer.getRecordClass());
 
             for (R queryResult : queryResults) {
-                E entry = transformator.mapToEntity(queryResult);
+                E entry = transformer.mapToEntity(queryResult);
                 entries.add(entry);
             }
 
             result = new PaginationResult<>(pageable, entries);
-        } catch (DataAccessException e) {
-            ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN, e.getMessage());
-        }
-
-        return result;
-    }
-
-    /**
-     * @param searchTerm
-     * @param pageable
-     * @return PaginationResult with all the entities currently in the database matching the searchTerm
-     * @throws ActivityTrackerException
-     */
-    @Override
-    public PaginationResult<E> searchAll(String searchTerm, Pageable pageable) throws ActivityTrackerException {
-        PaginationResult<E> result = null;
-        try {
-            List<E> entries = new ArrayList<>();
-
-            Condition condition = transformator.getTableId().notEqual(-1);
-            if (pageable.getCursor() != -1) {
-                if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
-                    condition = transformator.getTableId().greaterThan(pageable.getCursor());
-                } else {
-                    condition = transformator.getTableId().lessThan(pageable.getCursor());
-                }
-            }
-            String likeExpression = "%" + searchTerm + "%";
-
-            List<R> queryResults = jooq.selectFrom(transformator.getTable())
-                    .where(transformator.getSearchFields(likeExpression)).and(condition)
-                    .orderBy(transformator.getSortFields(pageable.getSortDirection()))
-                    .limit(pageable.getLimit())
-                    .fetchInto(transformator.getRecordClass());
-
-            for (R queryResult : queryResults) {
-                E entry = transformator.mapToEntity(queryResult);
-                entries.add(entry);
-            }
-
-            result = new PaginationResult<>(pageable, entries);
-        } catch (ActivityTrackerException ex) {
-            ExceptionHandler.getInstance().convertAndThrowException(ex);
         } catch (Exception e) {
-            ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN);
+            ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.UNKNOWN, e.getMessage());
         }
 
         return result;
@@ -192,12 +149,12 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
     public E findById(int id) throws ActivityTrackerException {
         R queryResult = null;
         try {
-            queryResult = jooq.selectFrom(transformator.getTable())
-                    .where(transformator.getTableId().equal(id))
+            queryResult = jooq.selectFrom(transformer.getTable())
+                    .where(transformer.getTableId().equal(id))
                     .fetchOne();
 
             if (queryResult == null) {
-                throw new Exception("No " + transformator.getRecordClass() + " found with id: " + id);
+                throw new Exception("No " + transformer.getRecordClass() + " found with id: " + id);
             }
         } catch (ActivityTrackerException ex) {
             ExceptionHandler.getInstance().convertAndThrowException(ex);
@@ -205,7 +162,7 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.REPOSITORY, ErrorCode.NOT_FOUND);
         }
 
-        return transformator.mapToEntity(queryResult);
+        return transformer.mapToEntity(queryResult);
     }
 
     /**
@@ -218,19 +175,19 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
     public E update(E entity) throws ActivityTrackerException {
         E byId = null;
         try {
-            UpdateSetFirstStep<R> update = jooq.update(transformator.getTable());
-            Map<Field, Object> map = transformator.getUpdateMap(entity);
+            UpdateSetFirstStep<R> update = jooq.update(transformer.getTable());
+            Map<Field, Object> map = transformer.getUpdateMap(entity);
             UpdateSetMoreStep moreStep = null;
             for (Map.Entry<Field, Object> item : map.entrySet()) {
                 Field key = item.getKey();
                 Object value = item.getValue();
-                if(moreStep == null)
+                if (moreStep == null)
                     moreStep = update.set(key, value);
                 else
-                    moreStep.set(key,value);
+                    moreStep.set(key, value);
             }
             assert moreStep != null;
-            moreStep.where(transformator.getTableId().equal(entity.getId())).execute();
+            moreStep.where(transformer.getTableId().equal(entity.getId())).execute();
             byId = findById(entity.getId());
         } catch (ActivityTrackerException ex) {
             ExceptionHandler.getInstance().convertAndThrowException(ex);

@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
-import de.rwth.dbis.acis.activitytracker.service.dal.entities.ActivityEx;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
@@ -21,7 +20,8 @@ import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.security.L2pSecurityException;
 import io.swagger.annotations.*;
-import org.apache.commons.dbcp2.*;
+import jodd.vtor.Vtor;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -47,25 +47,35 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * LAS2peer Activity Service
+ * Las2peer Activity Service
  */
 @ServicePath("activities")
 public class ActivityTrackerService extends RESTService {
 
+    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
     //CONFIG PROPERTIES
     protected String dbUserName;
     protected String dbPassword;
     protected String dbUrl;
     protected String baseURL;
-
     private DataSource dataSource;
-
-    private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
+    }
+
+    private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setUrl(dbUrl);
+        dataSource.setUsername(dbUserName);
+        dataSource.setPassword(dbPassword);
+        dataSource.setValidationQuery("SELECT 1;");
+        dataSource.setTestOnBorrow(true); // test each connection when borrowing from the pool with the validation query
+        dataSource.setMaxConnLifetimeMillis(1000 * 60 * 60); // max connection life time 1h. mysql drops connection after 8h.
+        return dataSource;
     }
 
     @Override
@@ -74,7 +84,7 @@ public class ActivityTrackerService extends RESTService {
     }
 
     /**
-     * Create Activty over RMI
+     * Create Activity over RMI
      *
      * @param activity as JSON string
      * @return
@@ -87,172 +97,46 @@ public class ActivityTrackerService extends RESTService {
         try {
             Gson gson = new Gson();
             Activity activityToCreate = gson.fromJson(activity, Activity.class);
-            Activity createdActivity = this.storeActivity(activityToCreate);
+            this.storeActivity(activityToCreate);
             return new Integer(Response.Status.CREATED.getStatusCode()).toString();
         } catch (ActivityTrackerException atException) {
+            logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
             return new Integer(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).toString();
         }
     }
 
-    @Api(value = "/activities", description = "Activities resource")
-    @SwaggerDefinition(
-            info = @Info(
-                    title = "LAS2peer Activity Service",
-                    version = "0.2",
-                    description = "An activity tracker for LAS2peer and other web services.",
-                    termsOfService = "http://requirements-bazaar.org",
-                    contact = @Contact(
-                            name = "Requirements Bazaar Dev Team",
-                            url = "http://requirements-bazaar.org",
-                            email = "info@requirements-bazaar.org"
-                    ),
-                    license = @License(
-                            name = "Apache2",
-                            url = "http://requirements-bazaar.org/license"
-                    )
-            ))
-
-    @Path("/")
-    public static class Resource {
-
-        private final ActivityTrackerService service = (ActivityTrackerService) Context.getCurrent().getService();
-
-        // //////////////////////////////////////////////////////////////////////////////////////
-        // Service methods.
-        // //////////////////////////////////////////////////////////////////////////////////////
-
-        @GET
-        @Path("/")
-        @Produces(MediaType.APPLICATION_JSON)
-        @ApiOperation(value = "This method returns a list of activities",
-                notes = "Default the latest ten activities will be returned")
-        @ApiResponses(value = {
-                @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities"),
-                @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
-                @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
-        })
-        //TODO add filter
-        public Response getActivities(
-                @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
-                @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
-                @ApiParam(value = "Limit of elements of components", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
-                @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
-
-            DALFacade dalFacade = null;
-            try {
-                if (before != -1 && after != -1) {
-                    ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITIESERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
-                }
-                int cursor = before != -1 ? before : after;
-                Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
-
-                PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-                cm.setMaxTotal(20);
-                CloseableHttpClient httpclient = HttpClients.custom()
-                        .setConnectionManager(cm)
-                        .build();
-
-                dalFacade = service.getDBConnection();
-                Gson gson = new Gson();
-                ExecutorService executor = Executors.newCachedThreadPool();
-
-                Map<String, Object> tempObjectStorage = new HashMap<>();
-
-                int getObjectCount = 0;
-                PaginationResult<Activity> activities;
-                List<ActivityEx> activitiesEx = new ArrayList<>();
-                Pageable pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-                while (activitiesEx.size() < limit && getObjectCount < 5) {
-                    pageInfo = new PageInfo(cursor, limit, "", sortDirection);
-                    activities = dalFacade.findActivities(pageInfo);
-                    getObjectCount++;
-                    cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
-                    if (cursor < 0) {
-                        cursor = 0;
-                    }
-                    activitiesEx.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activities.getElements(), tempObjectStorage));
-                }
-
-                executor.shutdown();
-                if (activitiesEx.size() > limit) {
-                    activitiesEx = activitiesEx.subList(0, limit);
-                }
-
-                PaginationResult<ActivityEx> activitiesExResult = new PaginationResult<>(pageInfo, activitiesEx);
-
-                Map<String, String> parameter = new HashMap<>();
-                parameter.put("limit", String.valueOf(limit));
-
-                Response.ResponseBuilder responseBuilder = Response.ok();
-                responseBuilder = responseBuilder.entity(gson.toJson(activitiesExResult.getElements()));
-                responseBuilder = service.paginationLinks(responseBuilder, activitiesExResult, "", parameter);
-                responseBuilder = service.xHeaderFields(responseBuilder, activitiesExResult);
-                Response response = responseBuilder.build();
-
-                return response;
-
-            } catch (ActivityTrackerException atException) {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
-            } catch (Exception ex) {
-                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, ex.getMessage());
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
-            } finally {
-                service.closeDBConnection(dalFacade);
-            }
-        }
-
-        @POST
-        @Path("/")
-        @Consumes(MediaType.APPLICATION_JSON)
-        @Produces(MediaType.APPLICATION_JSON)
-        @ApiOperation(value = "This method allows to create an activity",
-                notes = "Returns the created activity")
-        @ApiResponses(value = {
-                @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
-                @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
-        })
-        public Response createActivity(@ApiParam(value = "Activity" +
-                " entity as JSON", required = true) String activity) {
-            try {
-                Gson gson = new Gson();
-                Activity activityToCreate = gson.fromJson(activity, Activity.class);
-                Activity createdActivity = service.storeActivity(activityToCreate);
-                return Response.status(Response.Status.CREATED).entity(gson.toJson(createdActivity)).build();
-            } catch (ActivityTrackerException atException) {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
-            }
-        }
-
-    }
-
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        //TODO validate activity
+        Vtor vtor = new Vtor();
+        vtor.validate(activity);
+        if (vtor.hasViolations()) {
+            ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
+        }
+
         DALFacade dalFacade = null;
         try {
             dalFacade = this.getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
             return createdActivity;
         } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITIESERVICE, ErrorCode.UNKNOWN, "");
+            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "");
             throw atException;
         } finally {
             this.closeDBConnection(dalFacade);
         }
     }
 
-    private List<ActivityEx> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
-                                             List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
-        List<ActivityEx> activitiesEx = new ArrayList<>();
+    private List<Activity> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
+                                           List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
+        List<Activity> activitiesWithObjectBodies = new ArrayList<>();
         JsonParser parser = new JsonParser();
 
-        for (int i = 0; i < activities.size(); i++) {
-            Activity activity = activities.get(i);
-            ActivityEx activityEx = ActivityEx.getBuilderEx().activity(activity).build();
+        for (Activity activity : activities) {
+            Activity.Builder builder = Activity.getBuilder().activity(activity);
 
             try {
                 if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
                     if (tempObjectStorage.containsKey(activity.getDataUrl())) {
-                        activityEx.setData(tempObjectStorage.get(activity.getDataUrl()));
+                        builder.data(tempObjectStorage.get(activity.getDataUrl()));
                     } else {
                         URI uri = new URIBuilder(activity.getDataUrl()).build();
                         HttpGet httpget = new HttpGet(uri);
@@ -261,14 +145,14 @@ public class ActivityTrackerService extends RESTService {
                         }
                         Future<String> dataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
                         if (dataFuture != null) {
-                            activityEx.setData(parser.parse(dataFuture.get()));
-                            tempObjectStorage.put(activity.getDataUrl(), activityEx.getData());
+                            builder.data(parser.parse(dataFuture.get()));
+                            tempObjectStorage.put(activity.getDataUrl(), parser.parse(dataFuture.get()));
                         }
                     }
                 }
                 if (activity.getParentDataUrl() != null && !activity.getParentDataUrl().isEmpty()) {
                     if (tempObjectStorage.containsKey(activity.getParentDataUrl())) {
-                        activityEx.setParentData(tempObjectStorage.get(activity.getParentDataUrl()));
+                        builder.parentData(tempObjectStorage.get(activity.getParentDataUrl()));
                     } else {
 
                         URI uri = new URIBuilder(activity.getParentDataUrl()).build();
@@ -278,14 +162,14 @@ public class ActivityTrackerService extends RESTService {
                         }
                         Future<String> parentDataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
                         if (parentDataFuture != null) {
-                            activityEx.setParentData(parser.parse(parentDataFuture.get()));
-                            tempObjectStorage.put(activity.getParentDataUrl(), activityEx.getParentData());
+                            builder.parentData(parser.parse(parentDataFuture.get()));
+                            tempObjectStorage.put(activity.getParentDataUrl(), parser.parse(parentDataFuture.get()));
                         }
                     }
                 }
                 if (activity.getUserUrl() != null && !activity.getUserUrl().isEmpty()) {
                     if (tempObjectStorage.containsKey(activity.getUserUrl())) {
-                        activityEx.setUser(tempObjectStorage.get(activity.getUserUrl()));
+                        builder.user(tempObjectStorage.get(activity.getUserUrl()));
                     } else {
                         URI uri = new URIBuilder(activity.getUserUrl()).build();
                         HttpGet httpget = new HttpGet(uri);
@@ -294,12 +178,12 @@ public class ActivityTrackerService extends RESTService {
                         }
                         Future<String> userFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
                         if (userFuture != null) {
-                            activityEx.setUser(parser.parse(userFuture.get()));
-                            tempObjectStorage.put(activity.getUserUrl(), activityEx.getUser());
+                            builder.user(parser.parse(userFuture.get()));
+                            tempObjectStorage.put(activity.getUserUrl(), parser.parse(userFuture.get()));
                         }
                     }
                 }
-                activitiesEx.add(activityEx);
+                activitiesWithObjectBodies.add(builder.build());
             } catch (Exception ex) {
                 Throwable exCause = ex.getCause();
                 if (exCause instanceof ActivityTrackerException &&
@@ -313,7 +197,7 @@ public class ActivityTrackerService extends RESTService {
                 }
             }
         }
-        return activitiesEx;
+        return activitiesWithObjectBodies;
     }
 
     public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult, String path, Map<String, String> httpParameter) throws URISyntaxException {
@@ -366,19 +250,6 @@ public class ActivityTrackerService extends RESTService {
         return responseBuilder;
     }
 
-    private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-        dataSource.setUrl(dbUrl);
-        dataSource.setUsername(dbUserName);
-        dataSource.setPassword(dbPassword);
-        dataSource.setValidationQuery("SELECT 1;");
-        dataSource.setTestOnBorrow(true); // test each connection when borrowing from the pool with the validation query
-        dataSource.setMaxConnLifetimeMillis(1000 * 60 * 60); // max connection life time 1h. mysql drops connection after 8h.
-        return dataSource;
-    }
-
-
     public DALFacade getDBConnection() throws Exception {
         return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
     }
@@ -386,6 +257,202 @@ public class ActivityTrackerService extends RESTService {
     public void closeDBConnection(DALFacade dalFacade) {
         if (dalFacade == null) return;
         dalFacade.close();
+    }
+
+    @Api(value = "/activities", description = "Activities resource")
+    @SwaggerDefinition(
+            info = @Info(
+                    title = "las2peer Activity Service",
+                    version = "0.2",
+                    description = "An activity tracker for las2peer and other web services.",
+                    termsOfService = "http://requirements-bazaar.org",
+                    contact = @Contact(
+                            name = "Requirements Bazaar Dev Team",
+                            url = "http://requirements-bazaar.org",
+                            email = "info@requirements-bazaar.org"
+                    ),
+                    license = @License(
+                            name = "Apache2",
+                            url = "http://requirements-bazaar.org/license"
+                    )
+            ))
+
+    @Path("/")
+    public static class Resource {
+
+        private final ActivityTrackerService service = (ActivityTrackerService) Context.getCurrent().getService();
+
+        // //////////////////////////////////////////////////////////////////////////////////////
+        // Service methods.
+        // //////////////////////////////////////////////////////////////////////////////////////
+
+        @GET
+        @Path("/")
+        @Produces(MediaType.APPLICATION_JSON)
+        @ApiOperation(value = "This method returns a list of activities",
+                notes = "Default the latest ten activities will be returned")
+        @ApiResponses(value = {
+                @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities"),
+                @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
+                @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
+        })
+        public Response getActivities(
+                @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
+                @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
+                @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
+                @ApiParam(value = "Parameter to include or exclude the child elements 'data', 'parentData' and 'user'", required = false, allowableValues = "true, false") @DefaultValue("true") @QueryParam("fillChildElements") boolean fillChildElements,
+                @ApiParam(value = "Search string", required = false) @QueryParam("search") String search,
+                @ApiParam(value = "activityAction filter", required = false) @QueryParam("activityAction") String activityActionFilter,
+                @ApiParam(value = "origin filter", required = false) @QueryParam("origin") String originFilter,
+                @ApiParam(value = "dataType filter", required = false) @QueryParam("dataType") String dataTypeFilter,
+                @ApiParam(value = "dataUrl filter", required = false) @QueryParam("dataUrl") String dataUrlFilter,
+                @ApiParam(value = "parentDataType filter", required = false) @QueryParam("parentDataType") String parentDataTypeFilter,
+                @ApiParam(value = "parentDataUrl filter", required = false) @QueryParam("parentDataUrl") String parentDataUrlFilter,
+                @ApiParam(value = "userUrl filter", required = false) @QueryParam("userUrl") String userUrlFilter,
+                @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) {
+
+            DALFacade dalFacade = null;
+            try {
+                if (before != -1 && after != -1) {
+                    ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
+                }
+                int cursor = before != -1 ? before : after;
+                Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
+
+                HashMap<String, String> filters = new HashMap<>();
+                if (activityActionFilter != null) {
+                    filters.put("activityAction", activityActionFilter);
+                }
+                if (originFilter != null) {
+                    filters.put("origin", originFilter);
+                }
+                if (dataTypeFilter != null) {
+                    filters.put("dataType", dataTypeFilter);
+                }
+                if (dataUrlFilter != null) {
+                    filters.put("dataUrl", dataUrlFilter);
+                }
+                if (parentDataTypeFilter != null) {
+                    filters.put("parentDataType", parentDataTypeFilter);
+                }
+                if (parentDataUrlFilter != null) {
+                    filters.put("parentDataUrl", parentDataUrlFilter);
+                }
+                if (userUrlFilter != null) {
+                    filters.put("userUrl", userUrlFilter);
+                }
+
+                dalFacade = service.getDBConnection();
+
+                PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+                cm.setMaxTotal(20);
+                CloseableHttpClient httpclient = HttpClients.custom()
+                        .setConnectionManager(cm)
+                        .build();
+
+                ExecutorService executor = Executors.newCachedThreadPool();
+
+                Map<String, Object> tempObjectStorage = new HashMap<>();
+
+                int getObjectCount = 0;
+                PaginationResult<Activity> activitiesPaginationResult;
+                List<Activity> activities = new ArrayList<>();
+                Pageable pageInfo = null;
+                while (activities.size() < limit && getObjectCount < 5) {
+                    pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
+                    activitiesPaginationResult = dalFacade.findActivities(pageInfo);
+                    getObjectCount++;
+                    cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
+                    if (cursor < 0) {
+                        cursor = 0;
+                    }
+                    if (fillChildElements) {
+                        activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
+                    } else {
+                        activities.addAll(activitiesPaginationResult.getElements());
+                    }
+                }
+
+                executor.shutdown();
+                if (activities.size() > limit) {
+                    activities = activities.subList(0, limit);
+                }
+
+                activitiesPaginationResult = new PaginationResult<>(pageInfo, activities);
+
+                Map<String, String> parameter = new HashMap<>();
+                parameter.put("limit", String.valueOf(limit));
+                if (fillChildElements == false) {
+                    parameter.put("fillChildElements", String.valueOf(fillChildElements));
+                }
+                if (activityActionFilter != null) {
+                    parameter.put("activityActionFilter", activityActionFilter);
+                }
+                if (originFilter != null) {
+                    parameter.put("origin", originFilter);
+                }
+                if (dataTypeFilter != null) {
+                    parameter.put("dataType", dataTypeFilter);
+                }
+                if (dataUrlFilter != null) {
+                    parameter.put("dataUrl", dataUrlFilter);
+                }
+                if (parentDataTypeFilter != null) {
+                    parameter.put("parentDataType", parentDataTypeFilter);
+                }
+                if (parentDataUrlFilter != null) {
+                    parameter.put("parentDataUrl", parentDataUrlFilter);
+                }
+                if (userUrlFilter != null) {
+                    parameter.put("userURL", userUrlFilter);
+                }
+                if (search != null) {
+                    parameter.put("search", search);
+                }
+
+                Gson gson = new Gson();
+
+                Response.ResponseBuilder responseBuilder = Response.ok();
+                responseBuilder = responseBuilder.entity(gson.toJson(activitiesPaginationResult.getElements()));
+                responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult, "", parameter);
+                responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult);
+                Response response = responseBuilder.build();
+
+                return response;
+
+            } catch (ActivityTrackerException atException) {
+                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+            } catch (Exception ex) {
+                ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, ex.getMessage());
+                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+            } finally {
+                service.closeDBConnection(dalFacade);
+            }
+        }
+
+        @POST
+        @Path("/")
+        @Consumes(MediaType.APPLICATION_JSON)
+        @Produces(MediaType.APPLICATION_JSON)
+        @ApiOperation(value = "This method allows to create an activity",
+                notes = "Returns the created activity")
+        @ApiResponses(value = {
+                @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
+                @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
+        })
+        public Response createActivity(@ApiParam(value = "Activity" +
+                " entity to create", required = true) Activity activity) {
+            try {
+                Activity createdActivity = service.storeActivity(activity);
+                return Response.status(Response.Status.CREATED).entity(createdActivity.toJSON()).build();
+            } catch (ActivityTrackerException atException) {
+                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+            }
+        }
+
     }
 
 }

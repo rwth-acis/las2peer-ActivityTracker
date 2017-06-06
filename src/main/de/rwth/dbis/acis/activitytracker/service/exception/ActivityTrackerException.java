@@ -4,11 +4,11 @@ import com.google.gson.annotations.Expose;
 
 public class ActivityTrackerException extends Exception {
     @Expose
+    private final ExceptionLocation location;
+    @Expose
     private String message;
     @Expose
     private ErrorCode errorCode;
-    @Expose
-    private final ExceptionLocation location;
 
     protected ActivityTrackerException(ExceptionLocation location) {
         this.location = location;
