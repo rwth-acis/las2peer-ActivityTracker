@@ -311,7 +311,7 @@
             <arg value='192.168.178.21:9011'/>
             -->
             <arg value='uploadStartupDirectory'/>
-            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.2\",\"Passphrase\")'/>
+            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.3\",\"Passphrase\")'/>
             <arg value='startWebConnector'/>
             <arg value='interactive'/>
         </java>
