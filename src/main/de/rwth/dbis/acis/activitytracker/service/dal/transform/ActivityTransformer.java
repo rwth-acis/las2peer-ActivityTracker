@@ -1,15 +1,25 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
+import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
+import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
+import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import org.jooq.*;
+import org.jooq.impl.DSL;
 
 import java.util.*;
 
 import static de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
+import static org.jooq.impl.DSL.condition;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
+
     @Override
     public ActivityRecord createRecord(Activity entity) {
         ActivityRecord activityRecord = new ActivityRecord();
@@ -22,11 +32,23 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         activityRecord.setParentDataUrl(entity.getParentDataUrl());
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
+        activityRecord.setAdditionalObject(entity.getAdditionalObject().toString());
         return activityRecord;
     }
 
     @Override
-    public Activity mapToEntity(ActivityRecord record) {
+    public Activity mapToEntity(ActivityRecord record) throws ActivityTrackerException {
+
+        JsonNode actualObj = null;
+        try {
+            if (record.getAdditionalObject() != null) {
+                ObjectMapper mapper = new ObjectMapper();
+                actualObj = mapper.readTree((String) record.getAdditionalObject());
+            }
+        } catch (Exception e) {
+            ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);
+        }
+
         return Activity.getBuilder()
                 .id(record.getId())
                 .creationDate(record.getCreationDate())
@@ -38,6 +60,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 .parentDataUrl(record.getParentDataUrl())
                 .parentDataType(record.getParentDataType())
                 .userUrl(record.getUserUrl())
+                .additionalObject(record.getAdditionalObject() == null ? null : actualObj)
                 .build();
     }
 
@@ -107,6 +130,13 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
             }
             if (filterEntry.getKey().equals("userUrl")) {
                 conditions.add(ACTIVITY.USER_URL.equalIgnoreCase(filterEntry.getValue()));
+            }
+            if (filterEntry.getKey().equals("additionalObject")) {
+                //additional_object -> \"$.c.d\" = \"katze\""
+                //additional_object -> \"$.a\" > 2"
+                String extractQuery = filterEntry.getValue();
+                String extractQueryEscaped = DSL.escape(extractQuery,  new Character('"'));
+                conditions.add(DSL.condition("additional_object -> " + extractQuery ));
             }
         }
         return conditions;

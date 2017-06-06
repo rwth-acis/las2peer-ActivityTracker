@@ -1,9 +1,11 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jodd.vtor.constraint.MaxLength;
 import jodd.vtor.constraint.NotBlank;
 import jodd.vtor.constraint.NotNull;
-
 import java.util.Date;
 
 public class Activity extends EntityBase {
@@ -41,6 +43,9 @@ public class Activity extends EntityBase {
     @MaxLength(value= 255)
     private String userUrl;
 
+    @JsonDeserialize(using = JsonElementDeserialize.class)
+    private JsonNode additionalObject;
+
     private Object data;
 
     private Object parentData;
@@ -60,6 +65,7 @@ public class Activity extends EntityBase {
         this.dataFrontendUrl = builder.dataFrontendUrl;
         this.parentDataUrl = builder.parentDataUrl;
         this.parentDataType = builder.parentDataType;
+        this.additionalObject = builder.additionalObject;
         this.userUrl = builder.userUrl;
         this.data = builder.data;
         this.parentData = builder.parentData;
@@ -110,6 +116,10 @@ public class Activity extends EntityBase {
         return userUrl;
     }
 
+    public JsonNode getAdditionalObject() {
+        return additionalObject;
+    }
+
     public Object getData() {
         return data;
     }
@@ -134,6 +144,7 @@ public class Activity extends EntityBase {
         private String parentDataUrl;
         private String parentDataType;
         private String userUrl;
+        private JsonNode additionalObject;
         private Object data;
         private Object parentData;
         private Object user;
@@ -149,6 +160,7 @@ public class Activity extends EntityBase {
             parentDataUrl(activity.getParentDataUrl());
             parentDataType(activity.getParentDataType());
             userUrl(activity.getUserUrl());
+            additionalObject(activity.getAdditionalObject());
             return this;
         }
 
@@ -199,6 +211,11 @@ public class Activity extends EntityBase {
 
         public Builder userUrl(String userUrl) {
             this.userUrl = userUrl;
+            return this;
+        }
+
+        public Builder additionalObject(JsonNode additionalObject) {
+            this.additionalObject = additionalObject;
             return this;
         }
 
