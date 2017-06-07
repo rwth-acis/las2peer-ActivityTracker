@@ -5,6 +5,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerExcept
 import org.jooq.*;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,7 +66,7 @@ public interface Transformer<E, R extends Record> {
      * @param filters
      * @return a collection of conditions to filter.
      */
-    Collection<? extends Condition> getFilterConditions(Map<String, String> filters) throws Exception;
+    Collection<? extends Condition> getFilterConditions(Map<String, List<String>> filters) throws Exception;
 
 
 }

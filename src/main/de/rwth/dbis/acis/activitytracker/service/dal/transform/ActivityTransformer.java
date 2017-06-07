@@ -107,33 +107,49 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
     }
 
     @Override
-    public Collection<? extends Condition> getFilterConditions(Map<String, String> filters) throws Exception {
+    public Collection<? extends Condition> getFilterConditions(Map<String, List<String>> filters) throws Exception {
         List<Condition> conditions = new ArrayList<>();
-        for (Map.Entry<String, String> filterEntry : filters.entrySet()) {
+        for (Map.Entry<String, List<String>> filterEntry : filters.entrySet()) {
             if (filterEntry.getKey().equals("activityAction")) {
-                conditions.add(ACTIVITY.ACTIVITY_ACTION.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.ACTIVITY_ACTION.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("origin")) {
-                conditions.add(ACTIVITY.ORIGIN.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.ORIGIN.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("dataType")) {
-                conditions.add(ACTIVITY.DATA_TYPE.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.DATA_TYPE.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("dataUrl")) {
-                conditions.add(ACTIVITY.DATA_URL.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.DATA_URL.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("parentDataType")) {
-                conditions.add(ACTIVITY.PARENT_DATA_TYPE.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.PARENT_DATA_TYPE.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("parentDataUrl")) {
-                conditions.add(ACTIVITY.PARENT_DATA_URL.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.PARENT_DATA_URL.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("userUrl")) {
-                conditions.add(ACTIVITY.USER_URL.equalIgnoreCase(filterEntry.getValue()));
+                for (String filter : filterEntry.getValue()) {
+                    conditions.add(ACTIVITY.USER_URL.equalIgnoreCase(filter));
+                }
             }
             if (filterEntry.getKey().equals("additionalObject")) {
-                String extractQuery = filterEntry.getValue();
-                conditions.add(DSL.condition("additional_object -> " + extractQuery ));
+                for (String filter : filterEntry.getValue()) {
+                    // TODO: Check for SQL injection!
+                    conditions.add(DSL.condition("additional_object -> " + filter));
+                }
             }
         }
         return conditions;
