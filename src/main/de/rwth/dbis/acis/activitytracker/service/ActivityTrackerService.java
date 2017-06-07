@@ -303,7 +303,11 @@ public class ActivityTrackerService extends RESTService {
                 @ApiParam(value = "parentDataType filter", required = false) @QueryParam("parentDataType") String parentDataTypeFilter,
                 @ApiParam(value = "parentDataUrl filter", required = false) @QueryParam("parentDataUrl") String parentDataUrlFilter,
                 @ApiParam(value = "userUrl filter", required = false) @QueryParam("userUrl") String userUrlFilter,
-                @ApiParam(value = "MySQL extract query on additionalObject json field", required = false) @QueryParam("additionalObject") String additionalObject,
+                @ApiParam(value = "MySQL extract query on additionalObject json field. " +
+                        "Syntax:\"$.a.b\" to test object b inside object a. \"$[1][2]\" to test second array element inside first array. \"$.a[2].b\" to test object b inside second array element inside object a." +
+                        "Operators: =, !=, <, >, IS NULL, IS NOT NULL " +
+                        "Example: \"$.project.id\"=3"
+                        , required = false) @QueryParam("additionalObject") String additionalObject,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) throws ActivityTrackerException {
 
             DALFacade dalFacade = null;
