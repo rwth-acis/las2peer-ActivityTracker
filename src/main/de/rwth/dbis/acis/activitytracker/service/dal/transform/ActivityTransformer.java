@@ -132,10 +132,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 conditions.add(ACTIVITY.USER_URL.equalIgnoreCase(filterEntry.getValue()));
             }
             if (filterEntry.getKey().equals("additionalObject")) {
-                //additional_object -> \"$.c.d\" = \"katze\""
-                //additional_object -> \"$.a\" > 2"
                 String extractQuery = filterEntry.getValue();
-                String extractQueryEscaped = DSL.escape(extractQuery,  new Character('"'));
                 conditions.add(DSL.condition("additional_object -> " + extractQuery ));
             }
         }
