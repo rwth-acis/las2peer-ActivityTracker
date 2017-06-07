@@ -1,7 +1,8 @@
 package de.rwth.dbis.acis.activitytracker.service.exception;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public enum ExceptionHandler {
     INSTANCE;
@@ -37,10 +38,15 @@ public enum ExceptionHandler {
         throw activityEx;
     }
 
-    public String toJSON(ActivityTrackerException exception) {
-        GsonBuilder builder = new GsonBuilder();
-        builder.excludeFieldsWithoutExposeAnnotation();
-        final Gson gson = builder.create();
-        return gson.toJson(exception);
+    public String toJSON(ActivityTrackerException exception) throws ActivityTrackerException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        String jsonInString = null;
+        try {
+            jsonInString = mapper.writeValueAsString(exception);
+        } catch (JsonProcessingException e) {
+            ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);
+        }
+        return jsonInString;
     }
 }

@@ -8,12 +8,13 @@ public enum ErrorCode {
     DB_COMM("004", "Error during communicating to database. Possibly wrong connection parameters"),
     NOT_FOUND("005", "The item was not found"),
     NETWORK_PROBLEM("006", "Error while trying to receive activity content"),
-    WRONG_PARAMETER("006", "Wrong parameter given");
+    WRONG_PARAMETER("006", "Wrong parameter given"),
+    SERILIZATION_PROBLEM("007", "Json serialization problem");
 
     private final String code;
     private final String message;
 
-    private ErrorCode(String code, String message) {
+    ErrorCode(String code, String message) {
         this.code = code;
         this.message = message;
     }

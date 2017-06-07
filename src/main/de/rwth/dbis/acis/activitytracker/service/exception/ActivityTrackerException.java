@@ -1,13 +1,12 @@
 package de.rwth.dbis.acis.activitytracker.service.exception;
 
-import com.google.gson.annotations.Expose;
 
 public class ActivityTrackerException extends Exception {
-    @Expose
+
     private final ExceptionLocation location;
-    @Expose
+
     private String message;
-    @Expose
+
     private ErrorCode errorCode;
 
     protected ActivityTrackerException(ExceptionLocation location) {

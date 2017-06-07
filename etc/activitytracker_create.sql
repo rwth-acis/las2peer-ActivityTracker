@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS reqbaztrack.activity (
   parent_data_url   VARCHAR(255) NULL,
   parent_data_type  VARCHAR(255) NULL,
   user_url          VARCHAR(255) NULL,
+  additional_object JSON         NULL,
   CONSTRAINT activity_pk PRIMARY KEY (id)
 );
 

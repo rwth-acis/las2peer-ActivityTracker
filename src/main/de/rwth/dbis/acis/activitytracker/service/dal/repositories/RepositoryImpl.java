@@ -39,6 +39,7 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
         E transformedEntity = null;
         try {
             R persisted;
+
             persisted = jooq.insertInto(transformer.getTable())
                     .set(transformer.createRecord(entity))
                     .returning()
