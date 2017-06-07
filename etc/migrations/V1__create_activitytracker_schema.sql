@@ -1,9 +1,5 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE DATABASE IF NOT EXISTS reqbaztrack;
-
-DROP TABLE IF EXISTS reqbaztrack.activity;
-
 -- tables
 -- Table activity
 CREATE TABLE IF NOT EXISTS reqbaztrack.activity (
