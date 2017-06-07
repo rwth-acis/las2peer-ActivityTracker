@@ -1,6 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jodd.vtor.constraint.MaxLength;
@@ -13,6 +14,7 @@ public class Activity extends EntityBase {
     private int id;
 
     @NotNull
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     private Date creationDate;
 
     @NotNull
