@@ -66,7 +66,7 @@ public class ActivityTrackerService extends RESTService {
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-        dataSource.setUrl(dbUrl);
+        dataSource.setUrl(dbUrl + "?useSSL=false&serverTimezone=UTC");
         dataSource.setUsername(dbUserName);
         dataSource.setPassword(dbPassword);
         dataSource.setValidationQuery("SELECT 1;");

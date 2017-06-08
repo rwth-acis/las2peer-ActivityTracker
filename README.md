@@ -44,12 +44,11 @@ In order to be able to run this service project the following components should 
 How to set up the database
 -------------------
  1. `git clone` this repo
- 2. Enter your db credentials into the build.xml ant target migrate-db.
+ 2. To configure your database access look at the [Configuration](#configuration) section
  3. Compile the project with `ant`
  4. Create a new database called `reqbaztrack`, possibly with UTF-8 collation
  5. Run `ant migrate-db` to create your db schema
  6. If you need sample data run the file `\etc\activitytracker_demo_data.sql`
- 7. To configure your database access look at the [Configuration](#configuration) section
   
 Configuration
 -------------------

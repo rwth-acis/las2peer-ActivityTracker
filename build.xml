@@ -3,6 +3,8 @@
     <property file="etc/ant_configuration/user.properties"/>
     <property file="etc/ant_configuration/service.properties"/>
 
+    <property file="etc/de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService.properties"/>
+
     <property name="startup" location="etc/startup"/>
 
     <property name="service_agent.path" value="${startup}/${service.name}.${service.class}.xml"/>
@@ -317,18 +319,18 @@
     <target name="migrate-db">
         <taskdef uri="antlib:org.flywaydb.ant" resource="org/flywaydb/ant/antlib.xml">
             <classpath>
-                <pathelement location="service/flyway-core-4.2.0.jar"/>
-                <pathelement location="service/flyway-ant-4.2.0.jar"/>
-                <pathelement location="service/mysql-connector-java-6.0.5.jar"/>
+                <pathelement location="${service}/flyway-core-4.2.0.jar"/>
+                <pathelement location="${service}/flyway-ant-4.2.0.jar"/>
+                <pathelement location="${service}/mysql-connector-java-6.0.5.jar"/>
             </classpath>
         </taskdef>
 
         <path id="flyway.classpath">
-            <fileset dir="./service" includes="h2.jar"/>
+            <fileset dir="${service}" includes="h2.jar"/>
         </path>
         <property name="flyway.locations" value="filesystem:./etc/migrations"/>
 
-        <flyway:migrate url="jdbc:mysql://localhost:3306/reqbaztrack?useSSL=false&amp;serverTimezone=UTC" user="root" password="reqbaz"/>
+        <flyway:migrate url="${dbUrl}?useSSL=false&amp;serverTimezone=UTC" user="${dbUserName}" password="${dbPassword}"/>
     </target>
 
     <!-- Run degbug -->
@@ -346,7 +348,7 @@
                         <arg value='192.168.178.24:9011'/>
              -->
             <arg value='uploadStartupDirectory'/>
-            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.3\",\"Passphrase\")'/>
+            <arg value="startService('${service.name}.${service.class}@${service.version}','${service.passphrase}')"/>
             <arg value='startWebConnector'/>
             <arg value='interactive'/>
         </java>
