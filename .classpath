@@ -60,7 +60,7 @@
 	<classpathentry kind="lib" path="lib/las2peer-web-connector-0.6.7.jar"/>
 	<classpathentry kind="lib" path="lib/mail-1.4.7.jar"/>
 	<classpathentry kind="lib" path="lib/mimepull-1.8.jar"/>
-	<classpathentry kind="lib" path="service/mysql-connector-java-5.1.6.jar"/>
+	<classpathentry kind="lib" path="service/mysql-connector-java-6.0.5.jar"/>
 	<classpathentry kind="lib" path="lib/nimbus-jose-jwt-4.0.jar"/>
 	<classpathentry kind="lib" path="lib/oauth2-oidc-sdk-4.17.jar"/>	
 	<classpathentry kind="lib" path="lib/osgi-resource-locator-1.0.1.jar"/>
