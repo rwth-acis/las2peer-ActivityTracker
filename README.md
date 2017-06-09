@@ -48,7 +48,7 @@ How to set up the database
  3. Compile the project with `ant`
  4. Create a new database called `reqbaztrack`, possibly with UTF-8 collation
  5. Run `ant migrate-db` to create your db schema
- 6. If you need sample data run the file `\etc\activitytracker_demo_data.sql`
+ 6. If you need sample data run the file `\etc\add_activitytracker_demo_data.sql`
   
 Configuration
 -------------------
