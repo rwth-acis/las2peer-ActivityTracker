@@ -1,6 +1,5 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
@@ -444,11 +443,8 @@ public class ActivityTrackerService extends RESTService {
                 }
                 parameter.put("additionalObject", additionalObject);
 
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
                 Response.ResponseBuilder responseBuilder = Response.ok();
-                responseBuilder = responseBuilder.entity(mapper.writeValueAsString(activitiesPaginationResult.getElements()));
+                responseBuilder = responseBuilder.entity(activitiesPaginationResult.toJSON());
                 responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult, "", parameter);
                 responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult);
                 Response response = responseBuilder.build();
