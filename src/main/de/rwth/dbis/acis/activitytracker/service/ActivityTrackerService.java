@@ -1,5 +1,6 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
@@ -88,6 +89,7 @@ public class ActivityTrackerService extends RESTService {
     public String createActivity(String activity) {
         try {
             ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             mapper.readValue(activity, Activity.class);
             Activity activityToCreate = mapper.readValue(activity, Activity.class);
             this.storeActivity(activityToCreate);
