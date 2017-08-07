@@ -101,12 +101,13 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
+        /* //TODO: vtor does not work after adding JSON field to Activity. We need to check why.
         Vtor vtor = new Vtor();
         vtor.validate(activity);
         if (vtor.hasViolations()) {
             ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
         }
-
+        */
         DALFacade dalFacade = null;
         try {
             dalFacade = this.getDBConnection();
