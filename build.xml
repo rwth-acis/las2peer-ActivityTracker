@@ -1,7 +1,9 @@
-<project name="las2peer-ActivityTracker" default="all" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="las2peer-ActivityTracker" default="all" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:flyway="antlib:org.flywaydb.ant">
 
     <property file="etc/ant_configuration/user.properties"/>
     <property file="etc/ant_configuration/service.properties"/>
+
+    <property file="etc/de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService.properties"/>
 
     <property name="startup" location="etc/startup"/>
 
@@ -19,6 +21,7 @@
     <property name="service" location="service"/>
 
     <property name="tmp.classes" location="${tmp}/classes"/>
+    <property name="tmp.bundle" location="${tmp}/bundle" />
     <property name="tmp.junit" location="${tmp}/test"/>
 
     <property name="export" location="export"/>
@@ -71,6 +74,7 @@
         </ivy:settings>
         <ivy:retrieve type="jar, bundle" conf="platform" pattern="${lib}/[artifact]-[revision].[ext]"/>
         <ivy:retrieve type="jar, bundle" conf="bundle" pattern="${service}/[artifact]-[revision].[ext]"/>
+        <ivy:retrieve type="jar, bundle" conf="bundle" pattern="${tmp.bundle}/[artifact]-[revision].[ext]" />
     </target>
 
 
@@ -83,6 +87,7 @@
     <target name="init_general">
         <tstamp/>
         <mkdir dir="${tmp}"/>
+        <mkdir dir="${tmp.bundle}" />
         <mkdir dir="${export}"/>
         <mkdir dir="${startup}"/>
         <mkdir dir="${log}"/>
@@ -165,8 +170,9 @@
         </echo>
     </target>
 
+    
     <!-- Generate Jars -->
-    <target name="jar" description="--> jar">
+    <target name="jar" description="--> build service jar">
         <jar jarfile="${export.jars}/${service.name}-${service.version}.jar">
             <fileset dir="${tmp.classes}" includes="${service.path}/**"/>
             <manifest>
@@ -182,6 +188,18 @@
                 <attribute name="Library-Version" value="${service.version}"/>
                 <attribute name="Library-SymbolicName" value="${service.name}"/>
                 <attribute name="Import-Library" value="${service.dependencies}"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- Generate Jars ncluding all deps -->
+    <target name="jar-big" depends="compile_main" description="--> build service jar including all deps">
+        <jar jarfile="${service}/${service.name}-${service.version}.jar">
+            <fileset dir="${tmp.classes}" />
+            <zipgroupfileset dir="${tmp.bundle}" />
+            <manifest>
+                <attribute name="las2peer-service-name" value="${service.name}" />
+                <attribute name="las2peer-service-version" value="${service.version}" />
             </manifest>
         </jar>
     </target>
@@ -245,7 +263,7 @@
     <target name="generate_service_agent" depends="jar" unless="service_agent_exists">
         <echo message="Writing Service Agent xml to ${service_agent.path}"/>
         <java classname="i5.las2peer.tools.ServiceAgentGenerator" classpathref="libraries"
-            failonerror="true" fork="true" output="${service_agent.path}">
+              failonerror="true" fork="true" output="${service_agent.path}">
             <arg line="'${service.name}.${service.class}@${service.version}' '${service.passphrase}'"/>
         </java>
     </target>
@@ -271,7 +289,8 @@
         </java>
     </target>
 
-    <target name="generate_agents" depends="generate_service_agent, generate_user_agent1, generate_user_agent2, generate_user_agent3"
+    <target name="generate_agents"
+            depends="generate_service_agent, generate_user_agent1, generate_user_agent2, generate_user_agent3"
             description="--> generate example user agents">
         <echo file="${passphrases.path}" append="false">agent-user-${las2peer_user1.name}.xml;${las2peer_user1.password}
             agent-user-${las2peer_user2.name}.xml;${las2peer_user2.password}
@@ -296,6 +315,24 @@
     <target name="all" depends="clean_all, get_deps, compile_main, jar, startscripts, generate_agents"/>
 
 
+    <!-- Flyway database migration -->
+    <target name="migrate-db">
+        <taskdef uri="antlib:org.flywaydb.ant" resource="org/flywaydb/ant/antlib.xml">
+            <classpath>
+                <pathelement location="${service}/flyway-core-4.2.0.jar"/>
+                <pathelement location="${service}/flyway-ant-4.2.0.jar"/>
+                <pathelement location="${service}/mysql-connector-java-6.0.5.jar"/>
+            </classpath>
+        </taskdef>
+
+        <path id="flyway.classpath">
+            <fileset dir="${service}" includes="h2.jar"/>
+        </path>
+        <property name="flyway.locations" value="filesystem:./etc/migrations"/>
+
+        <flyway:migrate url="${dbUrl}?useSSL=false&amp;serverTimezone=UTC" user="${dbUserName}" password="${dbPassword}"/>
+    </target>
+
     <!-- Run degbug -->
     <target name="debug" depends="compile_main, jar">
         <java classname="i5.las2peer.tools.L2pNodeLauncher"
@@ -307,11 +344,11 @@
             <arg value='-p'/>
             <arg value='9012'/>
             <!--
-            <arg value='-b'/>
-            <arg value='192.168.178.21:9011'/>
-            -->
+                        <arg value='-b'/>
+                        <arg value='192.168.178.24:9011'/>
+             -->
             <arg value='uploadStartupDirectory'/>
-            <arg value='startService(\"de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.3\",\"Passphrase\")'/>
+            <arg value="startService('${service.name}.${service.class}@${service.version}','${service.passphrase}')"/>
             <arg value='startWebConnector'/>
             <arg value='interactive'/>
         </java>

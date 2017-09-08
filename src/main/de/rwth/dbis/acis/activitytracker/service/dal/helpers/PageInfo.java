@@ -1,20 +1,21 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.helpers;
 
+import java.util.List;
 import java.util.Map;
 
 public class PageInfo implements Pageable {
 
     private final int cursor;
     private final int limit;
-    private final Map<String, String> filters;
+    private final Map<String, List<String>> filters;
     private final SortDirection sortDirection;
     private final String search;
 
-    public PageInfo(int cursor, int limit, Map<String, String> filters) {
+    public PageInfo(int cursor, int limit, Map<String, List<String>> filters) {
         this(cursor, limit, filters, SortDirection.DEFAULT, null);
     }
 
-    public PageInfo(int cursor, int limit, Map<String, String> filters, SortDirection sortDirection, String search) {
+    public PageInfo(int cursor, int limit, Map<String, List<String>> filters, SortDirection sortDirection, String search) {
         this.cursor = cursor;
         this.limit = limit;
         this.filters = filters;
@@ -33,7 +34,7 @@ public class PageInfo implements Pageable {
     }
 
     @Override
-    public Map<String, String> getFilters() {
+    public Map<String, List<String>> getFilters() {
         return filters;
     }
 
