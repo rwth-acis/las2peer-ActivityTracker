@@ -27,6 +27,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
@@ -44,6 +46,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import static org.eclipse.paho.client.mqttv3.MqttClient.generateClientId;
 
 /**
  * Las2peer Activity Service
@@ -114,6 +118,7 @@ public class ActivityTrackerService extends RESTService {
         try {
             dalFacade = this.getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
+            this.publishMQTT(activity);
             return createdActivity;
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
@@ -248,6 +253,20 @@ public class ActivityTrackerService extends RESTService {
             }
         }
         return responseBuilder;
+    }
+
+    private void publishMQTT(Activity activity) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            MqttClient client = new MqttClient(
+                    "tcp://broker.mqttdashboard.com", generateClientId());
+            client.connect();
+            client.publish("activity-tracker/activity", mapper.writeValueAsString(activity).getBytes(), 2, true);
+            client.disconnect();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            // TODO
+        }
     }
 
     public DALFacade getDBConnection() throws Exception {
