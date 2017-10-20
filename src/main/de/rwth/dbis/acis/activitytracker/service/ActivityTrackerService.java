@@ -118,7 +118,7 @@ public class ActivityTrackerService extends RESTService {
         try {
             dalFacade = this.getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
-            this.publishMQTT(activity);
+            this.publishMQTT(createdActivity);
             return createdActivity;
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
