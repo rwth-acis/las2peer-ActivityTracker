@@ -6,6 +6,7 @@ Idea
 las2peer-ActivityTracker is a microservice to provide activity information for las2peer services. The service works together with all kinds of microservices.
 
 The activity tracker response to HTTP or (las2peer) p2p requests and can fetch activity objects from the origin microservice which created an activity.
+This service has also build-in MQTT support, so that all new activities will get publish to an MQTT broker of your choice. To enable MQTT publish please provide the MQTT information in the configuration file.
 
 We also provide a modern webcomponent frontend for this service which you can find also on **[<i class="icon-link "></i>Github](https://github.com/rwth-acis/activity-tracker)**.
 
@@ -28,7 +29,8 @@ API documentation endpoint:
 
 Technology
 -------------------
-The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project. For persisting our data we use MySQL database and jOOQ to access it. User input validation is done using Jodd Vtor library and for serializing our data into JSON format, we use the Jackson library.
+The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project. 
+For persisting our data we use MySQL database and jOOQ to access it. User input validation is done using Jodd Vtor library and for serializing our data into JSON format, we use the Jackson library. As MQTT client we use Eclipse Paho.
 
 Dependencies
 -------------------
