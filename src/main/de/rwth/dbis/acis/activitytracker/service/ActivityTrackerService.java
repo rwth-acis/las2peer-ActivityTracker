@@ -21,7 +21,6 @@ import i5.las2peer.p2p.AgentNotKnownException;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
-import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -64,7 +63,7 @@ public class ActivityTrackerService extends RESTService {
     protected String mqttBroker;
     protected String mqttUserName;
     protected String mqttPassword;
-    protected String mqttOrganisation;
+    protected String mqttOrganization;
     private DataSource dataSource;
 
     public ActivityTrackerService() throws Exception {
@@ -271,7 +270,7 @@ public class ActivityTrackerService extends RESTService {
             }
             MqttClient client = new MqttClient(mqttBroker, generateClientId());
             client.connect(options);
-            client.publish(mqttOrganisation.toLowerCase() + "/" + "activities" + "/" + activity.getOrigin().toLowerCase() + "/" +
+            client.publish(mqttOrganization.toLowerCase() + "/" + "activities" + "/" + activity.getOrigin().toLowerCase() + "/" +
                             activity.getDataType().toLowerCase() + "/" + activity.getActivityAction().toLowerCase(),
                     mapper.writeValueAsString(activity).getBytes(), 2, false);
             client.disconnect();
