@@ -1,5 +1,6 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
@@ -27,9 +28,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.*;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
@@ -265,22 +264,21 @@ public class ActivityTrackerService extends RESTService {
     private void publishMQTT(Activity activity) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-
             MqttConnectOptions options = new MqttConnectOptions();
             if (!mqttUserName.isEmpty()) {
                 options.setUserName(mqttUserName);
                 options.setPassword(mqttPassword.toCharArray());
             }
-
             MqttClient client = new MqttClient(mqttBroker, generateClientId());
             client.connect(options);
             client.publish(mqttOrganisation.toLowerCase() + "/" + "activities" + "/" + activity.getOrigin().toLowerCase() + "/" +
                             activity.getDataType().toLowerCase() + "/" + activity.getActivityAction().toLowerCase(),
                     mapper.writeValueAsString(activity).getBytes(), 2, false);
             client.disconnect();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            // TODO
+        } catch (MqttException e) {
+            logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "MQTT message could not been send.");
+        } catch (JsonProcessingException e) {
+            logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Error while process JSON data for MQTT.");
         }
     }
 
