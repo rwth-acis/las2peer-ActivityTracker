@@ -65,6 +65,7 @@ public class ActivityTrackerService extends RESTService {
     protected String mqttBroker;
     protected String mqttUserName;
     protected String mqttPassword;
+    protected String mqttOrganisation;
     private DataSource dataSource;
 
     public ActivityTrackerService() throws Exception {
@@ -273,7 +274,9 @@ public class ActivityTrackerService extends RESTService {
 
             MqttClient client = new MqttClient(mqttBroker, generateClientId());
             client.connect(options);
-            client.publish("activity-tracker/activity", mapper.writeValueAsString(activity).getBytes(), 2, true);
+            client.publish(mqttOrganisation.toLowerCase() + "/" + "activities" + "/" + activity.getOrigin().toLowerCase() + "/" +
+                            activity.getDataType().toLowerCase() + "/" + activity.getActivityAction().toLowerCase(),
+                    mapper.writeValueAsString(activity).getBytes(), 2, false);
             client.disconnect();
         } catch (Exception e) {
             System.out.println(e.getMessage());
