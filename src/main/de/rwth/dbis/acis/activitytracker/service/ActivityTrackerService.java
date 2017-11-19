@@ -28,6 +28,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.jooq.SQLDialect;
 
@@ -61,6 +62,9 @@ public class ActivityTrackerService extends RESTService {
     protected String dbPassword;
     protected String dbUrl;
     protected String baseURL;
+    protected String mqttBroker;
+    protected String mqttUserName;
+    protected String mqttPassword;
     private DataSource dataSource;
 
     public ActivityTrackerService() throws Exception {
@@ -118,7 +122,9 @@ public class ActivityTrackerService extends RESTService {
         try {
             dalFacade = this.getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
-            this.publishMQTT(createdActivity);
+            if (!mqttBroker.isEmpty()) {
+                this.publishMQTT(createdActivity);
+            }
             return createdActivity;
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
@@ -258,9 +264,15 @@ public class ActivityTrackerService extends RESTService {
     private void publishMQTT(Activity activity) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            MqttClient client = new MqttClient(
-                    "tcp://broker.mqttdashboard.com", generateClientId());
-            client.connect();
+
+            MqttConnectOptions options = new MqttConnectOptions();
+            if (!mqttUserName.isEmpty()) {
+                options.setUserName(mqttUserName);
+                options.setPassword(mqttPassword.toCharArray());
+            }
+
+            MqttClient client = new MqttClient(mqttBroker, generateClientId());
+            client.connect(options);
             client.publish("activity-tracker/activity", mapper.writeValueAsString(activity).getBytes(), 2, true);
             client.disconnect();
         } catch (Exception e) {
