@@ -64,6 +64,7 @@ public class ActivityTrackerService extends RESTService {
     protected String mqttUserName;
     protected String mqttPassword;
     protected String mqttOrganization;
+    private final int MQTT_VERSION = 1;
     private DataSource dataSource;
 
     public ActivityTrackerService() throws Exception {
@@ -270,9 +271,9 @@ public class ActivityTrackerService extends RESTService {
             }
             MqttClient client = new MqttClient(mqttBroker, generateClientId());
             client.connect(options);
-            client.publish(mqttOrganization.toLowerCase() + "/" + "activities" + "/" + activity.getOrigin().toLowerCase() + "/" +
-                            activity.getDataType().toLowerCase() + "/" + activity.getActivityAction().toLowerCase(),
-                    mapper.writeValueAsString(activity).getBytes(), 2, false);
+            client.publish(mqttOrganization.toLowerCase() + "/" + "activities" + "/" + MQTT_VERSION + "/" +
+                            activity.getOrigin().toLowerCase() + "/" + activity.getDataType().toLowerCase() + "/" + activity.getActivityAction().toLowerCase(),
+                    mapper.writeValueAsString(activity).getBytes(), 2, true);
             client.disconnect();
         } catch (MqttException e) {
             logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "MQTT message could not been send.");
