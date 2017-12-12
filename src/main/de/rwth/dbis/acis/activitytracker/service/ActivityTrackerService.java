@@ -1,5 +1,6 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -264,6 +265,7 @@ public class ActivityTrackerService extends RESTService {
     private void publishMQTT(Activity activity) {
         try {
             ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             MqttConnectOptions options = new MqttConnectOptions();
             if (!mqttUserName.isEmpty()) {
                 options.setUserName(mqttUserName);
