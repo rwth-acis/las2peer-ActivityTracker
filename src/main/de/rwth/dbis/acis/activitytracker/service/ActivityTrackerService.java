@@ -1,5 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
@@ -20,13 +22,13 @@ import i5.las2peer.p2p.AgentNotKnownException;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
-import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.eclipse.paho.client.mqttv3.*;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
@@ -45,6 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static org.eclipse.paho.client.mqttv3.MqttClient.generateClientId;
+
 /**
  * Las2peer Activity Service
  */
@@ -57,6 +61,11 @@ public class ActivityTrackerService extends RESTService {
     protected String dbPassword;
     protected String dbUrl;
     protected String baseURL;
+    protected String mqttBroker;
+    protected String mqttUserName;
+    protected String mqttPassword;
+    protected String mqttOrganization;
+    private final int MQTT_VERSION = 1;
     private DataSource dataSource;
 
     public ActivityTrackerService() throws Exception {
@@ -114,6 +123,9 @@ public class ActivityTrackerService extends RESTService {
         try {
             dalFacade = this.getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
+            if (!mqttBroker.isEmpty()) {
+                this.publishMQTT(createdActivity);
+            }
             return createdActivity;
         } catch (Exception ex) {
             ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
@@ -250,6 +262,28 @@ public class ActivityTrackerService extends RESTService {
         return responseBuilder;
     }
 
+    private void publishMQTT(Activity activity) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            MqttConnectOptions options = new MqttConnectOptions();
+            if (!mqttUserName.isEmpty()) {
+                options.setUserName(mqttUserName);
+                options.setPassword(mqttPassword.toCharArray());
+            }
+            MqttClient client = new MqttClient(mqttBroker, generateClientId());
+            client.connect(options);
+            client.publish(mqttOrganization.toLowerCase() + "/" + "activities" + "/" + MQTT_VERSION + "/" +
+                            activity.getOrigin().toLowerCase() + "/" + activity.getDataType().toLowerCase() + "/" + activity.getActivityAction().toLowerCase(),
+                    mapper.writeValueAsString(activity).getBytes(), 2, true);
+            client.disconnect();
+        } catch (MqttException e) {
+            logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "MQTT message could not been send.");
+        } catch (JsonProcessingException e) {
+            logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Error while process JSON data for MQTT.");
+        }
+    }
+
     public DALFacade getDBConnection() throws Exception {
         return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
     }
@@ -263,7 +297,7 @@ public class ActivityTrackerService extends RESTService {
     @SwaggerDefinition(
             info = @Info(
                     title = "las2peer Activity Service",
-                    version = "0.4.1",
+                    version = "0.5.0",
                     description = "An activity tracker for las2peer and other web services.",
                     termsOfService = "http://requirements-bazaar.org",
                     contact = @Contact(

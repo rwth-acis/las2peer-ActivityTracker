@@ -6,6 +6,7 @@ Idea
 las2peer-ActivityTracker is a microservice to provide activity information for las2peer services. The service works together with all kinds of microservices.
 
 The activity tracker response to HTTP or (las2peer) p2p requests and can fetch activity objects from the origin microservice which created an activity.
+This service has also build-in MQTT support, so that all new activities will get publish to an MQTT broker of your choice. To enable MQTT publish please provide the MQTT information in the configuration file.
 
 We also provide a modern webcomponent frontend for this service which you can find also on **[<i class="icon-link "></i>Github](https://github.com/rwth-acis/activity-tracker)**.
 
@@ -28,7 +29,8 @@ API documentation endpoint:
 
 Technology
 -------------------
-The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project. For persisting our data we use MySQL database and jOOQ to access it. User input validation is done using Jodd Vtor library and for serializing our data into JSON format, we use the Jackson library.
+The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project. 
+For persisting our data we use MySQL database and jOOQ to access it. User input validation is done using Jodd Vtor library and for serializing our data into JSON format, we use the Jackson library. As MQTT client we use Eclipse Paho.
 
 Dependencies
 -------------------
@@ -54,12 +56,16 @@ Configuration
 You need to configure the the service to your own specific environment. Here is the list of configuration variables:
 
 `\etc\de.rwth.dbis.acis.activity.service.ActivityService.properties`:
- - `dbUserName`:	A database user's name, which will be used to access the database
- - `dbPassword`:	The database user's password
+ - `dbUserName`:	Database username, which will be used to access the database
+ - `dbPassword`:	Database user password, which will be used to access the database
  - `dbUrl`:			JDBC Connection string to access the database
  - `land`:          Default language setting
  - `country`:       Default country setting
  - `baseURL`:       Base URL this service runs on
+ - `mqttBroker`:    MQTT Broker, if this field is set it enables MQTT publish of new activities
+ - `mqttUserName`:  MQTT username to publish to broker, if this field is set MQTT use username and password. If not it MQTT doe not use authorize to broker.
+ - `mqttPassword`:  MQTT password to publish to broker
+ - `mqttOrganization`: Your organisation name, used as first channel description in MQTT
 
 For other configuration settings, check the **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project.
 
@@ -93,3 +99,4 @@ Troubleshooting & FAQ
  - I can not run the start script: Check if you have OS permission to run the file.
  - The service does not start: Check if all jars in the lib and service folder are readable.
  - The start script seems broken: Check if the start script has the correct encoding. If you ran the service on Unix use `dos2unix` to change the encoding.
+ - To enable MQTT publish of new activities set `mqttBroker` and `mqttOrganization` in property file.
