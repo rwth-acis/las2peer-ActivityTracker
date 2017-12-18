@@ -16,9 +16,9 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Context;
+import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver;
-import i5.las2peer.p2p.AgentNotKnownException;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
@@ -52,6 +52,7 @@ import static org.eclipse.paho.client.mqttv3.MqttClient.generateClientId;
 /**
  * Las2peer Activity Service
  */
+@ManualDeployment
 @ServicePath("activities")
 public class ActivityTrackerService extends RESTService {
 
@@ -321,7 +322,6 @@ public class ActivityTrackerService extends RESTService {
         // //////////////////////////////////////////////////////////////////////////////////////
 
         @GET
-        @Path("/")
         @Produces(MediaType.APPLICATION_JSON)
         @ApiOperation(value = "This method returns a list of activities",
                 notes = "Default the latest ten activities will be returned")
@@ -503,7 +503,6 @@ public class ActivityTrackerService extends RESTService {
         }
 
         @POST
-        @Path("/")
         @Consumes(MediaType.APPLICATION_JSON)
         @Produces(MediaType.APPLICATION_JSON)
         @ApiOperation(value = "This method allows to create an activity",
@@ -540,9 +539,8 @@ public class ActivityTrackerService extends RESTService {
             try {
                 String serviceNameVersion = Context.getCurrent().getService().getAgent().getServiceNameVersion().toString();
                 return Response.ok("{\"version\": \"" + serviceNameVersion + "\"}").build();
-            } catch (AgentNotKnownException ex) {
+            } catch (Exception ex) {
                 ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, ex.getMessage());
-                L2pLogger.logEvent(NodeObserver.Event.SERVICE_ERROR, Context.getCurrent().getMainAgent(), "Get service name version failed");
                 service.logger.warning(atException.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             }
