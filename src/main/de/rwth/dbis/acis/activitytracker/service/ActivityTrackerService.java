@@ -10,6 +10,7 @@ import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
+import de.rwth.dbis.acis.activitytracker.service.dal.jooq.Reqbaztrack;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
@@ -22,6 +23,7 @@ import i5.las2peer.logging.NodeObserver;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
+import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -113,13 +115,12 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        /* //TODO: vtor does not work after adding JSON field to Activity. We need to check why.
         Vtor vtor = new Vtor();
         vtor.validate(activity);
         if (vtor.hasViolations()) {
             ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
         }
-        */
+
         DALFacade dalFacade = null;
         try {
             dalFacade = this.getDBConnection();
@@ -517,8 +518,12 @@ public class ActivityTrackerService extends RESTService {
                 Activity createdActivity = service.storeActivity(activity);
                 return Response.status(Response.Status.CREATED).entity(createdActivity.toJSON()).build();
             } catch (ActivityTrackerException atException) {
-                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+                if (atException.getErrorCode().equals(ErrorCode.VALIDATION)) {
+                    return Response.status(Response.Status.BAD_REQUEST).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+                } else {
+                    service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+                }
             }
         }
 
