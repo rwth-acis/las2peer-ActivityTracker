@@ -204,6 +204,10 @@ public class ActivityTrackerService extends RESTService {
                 } else if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
                     logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
+                } else if (exCause instanceof ActivityTrackerException &&
+                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.UNKNOWN &&
+                        ((ActivityTrackerException) exCause).getLocation() == ExceptionLocation.NETWORK) {
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource could not be fetched, Network error. Skip object.");
                 } else {
                     throw ex;
                 }
@@ -212,7 +216,7 @@ public class ActivityTrackerService extends RESTService {
         return activitiesWithObjectBodies;
     }
 
-    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult, String path, Map<String, List<String>> httpParameter) throws URISyntaxException {
+    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, Pageable pageable, String path, Map<String, List<String>> httpParameter) throws URISyntaxException {
         List<Link> links = new ArrayList<>();
 
         URIBuilder uriBuilder = new URIBuilder(baseURL + path);
@@ -221,45 +225,25 @@ public class ActivityTrackerService extends RESTService {
                 uriBuilder.addParameter(entry.getKey(), parameter);
             }
         }
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build()).rel("prev").build());
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build()).rel("next").build());
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build()).rel("prev").build());
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build()).rel("next").build());
-            }
+        if (pageable.getBeforeCursor() != -1) {
+            URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+            links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(pageable.getBeforeCursor())).build()).rel("prev").build());
+        }
+        if (pageable.getAfterCursor() != -1) {
+            URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+            links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(pageable.getAfterCursor())).build()).rel("next").build());
         }
         responseBuilder = responseBuilder.links(links.toArray(new Link[links.size()]));
         return responseBuilder;
     }
 
-    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult) {
-        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
-            }
+    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, Pageable pageable) {
+        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(pageable.getLimit()));
+        if (pageable.getBeforeCursor() != -1) {
+            responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(pageable.getBeforeCursor()));
+        }
+        if (pageable.getAfterCursor() != -1) {
+            responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(pageable.getAfterCursor()));
         }
         return responseBuilder;
     }
@@ -353,10 +337,13 @@ public class ActivityTrackerService extends RESTService {
 
             DALFacade dalFacade = null;
             try {
+                // Not both before and after parameter can be set at the same time
                 if (before != -1 && after != -1) {
                     ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
                 }
+                // Set cursor with before or after parameter
                 int cursor = before != -1 ? before : after;
+                // Set sortDirection with before or after parameter
                 Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
 
                 HashMap<String, List<String>> filters = new HashMap<>();
@@ -412,17 +399,12 @@ public class ActivityTrackerService extends RESTService {
                 Map<String, Object> tempObjectStorage = new HashMap<>();
 
                 int getObjectCount = 0;
+                Pageable pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
                 PaginationResult<Activity> activitiesPaginationResult;
                 List<Activity> activities = new ArrayList<>();
-                Pageable pageInfo = null;
                 while (activities.size() < limit && getObjectCount < 5) {
-                    pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
                     activitiesPaginationResult = dalFacade.findActivities(pageInfo);
                     getObjectCount++;
-                    cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
-                    if (cursor < 0) {
-                        cursor = 0;
-                    }
                     if (fillChildElements) {
                         activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
                     } else {
@@ -430,12 +412,12 @@ public class ActivityTrackerService extends RESTService {
                     }
                 }
 
-                executor.shutdown();
-                if (activities.size() > limit) {
-                    activities = activities.subList(0, limit);
-                }
-
+                // create new PaginationResult from enriched activities
                 activitiesPaginationResult = new PaginationResult<>(pageInfo, activities);
+                // trim result to limit
+                activitiesPaginationResult.trim(limit);
+
+                executor.shutdown();
 
                 Map<String, List<String>> parameter = new HashMap<>();
                 parameter.put("limit", new ArrayList() {{
@@ -485,8 +467,8 @@ public class ActivityTrackerService extends RESTService {
 
                 Response.ResponseBuilder responseBuilder = Response.ok();
                 responseBuilder = responseBuilder.entity(activitiesPaginationResult.toJSON());
-                responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult, "", parameter);
-                responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult);
+                responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult.getPageable(), "", parameter);
+                responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult.getPageable());
                 Response response = responseBuilder.build();
 
                 return response;

@@ -30,7 +30,7 @@ public class ActivityTrackerException extends Exception {
         this.errorCode = errorCode;
     }
 
-    public int getExceptionCode() {
-        return Integer.valueOf(location.asCode() + errorCode.asCode());
+    public ExceptionLocation getLocation() {
+        return location;
     }
 }

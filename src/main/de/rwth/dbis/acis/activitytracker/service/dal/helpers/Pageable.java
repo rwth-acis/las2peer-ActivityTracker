@@ -5,6 +5,13 @@ import java.util.Map;
 
 public interface Pageable {
     int getCursor();
+    void setCursor(int cursor);
+
+    int getBeforeCursor();
+    void setBeforeCursor(int beforeCursor);
+
+    int getAfterCursor();
+    void setAfterCursor(int afterCursor);
 
     int getLimit();
 
