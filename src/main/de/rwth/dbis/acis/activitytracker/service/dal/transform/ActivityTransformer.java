@@ -32,6 +32,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         activityRecord.setParentDataUrl(entity.getParentDataUrl());
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
+        activityRecord.setPublic((byte) (entity.isPublicActivity() ? 1 : 0));
         activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? null : entity.getAdditionalObject().toString());
         return activityRecord;
     }
@@ -60,6 +61,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 .parentDataUrl(record.getParentDataUrl())
                 .parentDataType(record.getParentDataType())
                 .userUrl(record.getUserUrl())
+                .publicActivity(record.getPublic() == 1)
                 .additionalObject(record.getAdditionalObject() == null ? null : actualObj)
                 .build();
     }

@@ -216,6 +216,43 @@ public class ActivityTrackerService extends RESTService {
         return activitiesWithObjectBodies;
     }
 
+    private boolean isVisible(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
+                              Activity activity, Map<String, Object> tempObjectStorage) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            if (tempObjectStorage.containsKey(activity.getDataUrl())) {
+                return true;
+            } else {
+                URI uri = new URIBuilder(activity.getDataUrl()).build();
+                HttpGet httpget = new HttpGet(uri);
+                if (!authorizationToken.isEmpty()) {
+                    httpget.addHeader("authorization", authorizationToken);
+                }
+                Future<String> dataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                if (dataFuture != null) {
+                    tempObjectStorage.put(activity.getDataUrl(), mapper.readValue(dataFuture.get(), Object.class));
+                }
+            }
+            return true;
+        } catch (Exception ex) {
+            Throwable exCause = ex.getCause();
+            if (exCause instanceof ActivityTrackerException &&
+                    ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
+                logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Object not visible for user token or anonymous. Skip object.");
+            } else if (exCause instanceof ActivityTrackerException &&
+                    ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
+                logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
+            } else if (exCause instanceof ActivityTrackerException &&
+                    ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.UNKNOWN &&
+                    ((ActivityTrackerException) exCause).getLocation() == ExceptionLocation.NETWORK) {
+                logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource could not be fetched, Network error. Skip object.");
+            } else {
+                throw ex;
+            }
+        }
+        return false;
+    }
+
     public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, Pageable pageable, String path, Map<String, List<String>> httpParameter) throws URISyntaxException {
         List<Link> links = new ArrayList<>();
 
@@ -408,7 +445,13 @@ public class ActivityTrackerService extends RESTService {
                     if (fillChildElements) {
                         activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
                     } else {
-                        activities.addAll(activitiesPaginationResult.getElements());
+                        for (Activity activity : activitiesPaginationResult.getElements()) {
+                            if (activity.isPublicActivity()) {
+                                activities.add(activity);
+                            } else if (service.isVisible(httpclient, executor, authorizationToken, activity, tempObjectStorage)) {
+                                activities.add(activity);
+                            }
+                        }
                     }
                 }
 
@@ -488,7 +531,8 @@ public class ActivityTrackerService extends RESTService {
         @POST
         @Consumes(MediaType.APPLICATION_JSON)
         @Produces(MediaType.APPLICATION_JSON)
-        @ApiOperation(value = "This method allows to create an activity",
+        @ApiOperation(value = "This method allows to create an activity. " +
+                "To create a private activity please set the 'publicActivity' to false.",
                 notes = "Returns the created activity")
         @ApiResponses(value = {
                 @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
