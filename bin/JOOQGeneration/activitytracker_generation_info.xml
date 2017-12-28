@@ -3,7 +3,7 @@
 	<!-- Configure the database connection here -->
 	<jdbc>
 		<driver>com.mysql.jdbc.Driver</driver>
-		<url>jdbc:mysql://localhost:3306/reqbaztrack</url>
+		<url>jdbc:mysql://localhost:3306/reqbaztrack?useSSL=false&amp;serverTimezone=UTC</url>
 		<user>root</user>
 		<password>reqbaz</password>
 	</jdbc>
