@@ -5,6 +5,7 @@ package de.rwth.dbis.acis.activitytracker.service.dal.jooq;
 
 
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity;
+import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.SchemaVersion;
 
 import javax.annotation.Generated;
 
@@ -26,4 +27,9 @@ public class Tables {
      * The table <code>reqbaztrack.activity</code>.
      */
     public static final Activity ACTIVITY = de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
+
+    /**
+     * The table <code>reqbaztrack.schema_version</code>.
+     */
+    public static final SchemaVersion SCHEMA_VERSION = de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.SchemaVersion.SCHEMA_VERSION;
 }
