@@ -73,13 +73,13 @@ public class ActivityTrackerService extends RESTService {
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
-        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setUrl(dbUrl + "?useSSL=false&serverTimezone=UTC");
         dataSource.setUsername(dbUserName);
         dataSource.setPassword(dbPassword);
