@@ -300,7 +300,8 @@
                         <arg value='-b'/>
                         <arg value='192.168.178.24:9011'/>
              -->
-            <arg value='--service-directory service'/>
+            <arg value='--service-directory'/>
+            <arg value='service'/>
             <arg value='uploadStartupDirectory'/>
             <arg value="startService('${service.name}.${service.class}@${service.version}','${service.passphrase}')"/>
             <arg value='startWebConnector'/>
