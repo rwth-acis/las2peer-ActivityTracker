@@ -30,3 +30,4 @@ bin/start_network.sh
 # Eclipse
 .metadata
 .idea/workspace.xml
+etc/launcher-configuration.ini

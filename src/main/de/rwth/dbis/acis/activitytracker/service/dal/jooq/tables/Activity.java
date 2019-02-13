@@ -36,7 +36,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Activity extends TableImpl<ActivityRecord> {
 
-    private static final long serialVersionUID = -510775665;
+    private static final long serialVersionUID = -1272434765;
 
     /**
      * The reference instance of <code>reqbaztrack.activity</code>
@@ -105,6 +105,11 @@ public class Activity extends TableImpl<ActivityRecord> {
      * The column <code>reqbaztrack.activity.additional_object</code>.
      */
     public final TableField<ActivityRecord, Object> ADDITIONAL_OBJECT = createField("additional_object", org.jooq.impl.DefaultDataType.getDefaultDataType("json"), this, "");
+
+    /**
+     * The column <code>reqbaztrack.activity.public</code>.
+     */
+    public final TableField<ActivityRecord, Byte> PUBLIC = createField("public", org.jooq.impl.SQLDataType.TINYINT.defaultValue(org.jooq.impl.DSL.inline("1", org.jooq.impl.SQLDataType.TINYINT)), this, "");
 
     /**
      * Create a <code>reqbaztrack.activity</code> table reference

@@ -2,6 +2,7 @@ package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jodd.vtor.constraint.MaxLength;
@@ -45,6 +46,9 @@ public class Activity extends EntityBase {
     @MaxLength(value= 255)
     private String userUrl;
 
+    @JsonIgnore
+    private boolean publicActivity = true;
+
     @JsonDeserialize(using = JsonElementDeserialize.class)
     private JsonNode additionalObject;
 
@@ -69,6 +73,7 @@ public class Activity extends EntityBase {
         this.parentDataType = builder.parentDataType;
         this.additionalObject = builder.additionalObject;
         this.userUrl = builder.userUrl;
+        this.publicActivity = builder.publicActivity;
         this.data = builder.data;
         this.parentData = builder.parentData;
         this.user = builder.user;
@@ -118,6 +123,10 @@ public class Activity extends EntityBase {
         return userUrl;
     }
 
+    public Boolean isPublicActivity() {
+        return publicActivity;
+    }
+
     public JsonNode getAdditionalObject() {
         return additionalObject;
     }
@@ -146,6 +155,7 @@ public class Activity extends EntityBase {
         private String parentDataUrl;
         private String parentDataType;
         private String userUrl;
+        private Boolean publicActivity;
         private JsonNode additionalObject;
         private Object data;
         private Object parentData;
@@ -162,6 +172,7 @@ public class Activity extends EntityBase {
             parentDataUrl(activity.getParentDataUrl());
             parentDataType(activity.getParentDataType());
             userUrl(activity.getUserUrl());
+            publicActivity(activity.isPublicActivity());
             additionalObject(activity.getAdditionalObject());
             return this;
         }
@@ -213,6 +224,11 @@ public class Activity extends EntityBase {
 
         public Builder userUrl(String userUrl) {
             this.userUrl = userUrl;
+            return this;
+        }
+
+        public Builder publicActivity(Boolean publicActivity) {
+            this.publicActivity = publicActivity;
             return this;
         }
 

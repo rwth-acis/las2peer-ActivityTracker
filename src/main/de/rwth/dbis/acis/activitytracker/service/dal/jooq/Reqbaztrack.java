@@ -5,6 +5,7 @@ package de.rwth.dbis.acis.activitytracker.service.dal.jooq;
 
 
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity;
+import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.SchemaVersion;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +31,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Reqbaztrack extends SchemaImpl {
 
-    private static final long serialVersionUID = -1601202747;
+    private static final long serialVersionUID = -2136063656;
 
     /**
      * The reference instance of <code>reqbaztrack</code>
@@ -41,6 +42,11 @@ public class Reqbaztrack extends SchemaImpl {
      * The table <code>reqbaztrack.activity</code>.
      */
     public final Activity ACTIVITY = de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
+
+    /**
+     * The table <code>reqbaztrack.schema_version</code>.
+     */
+    public final SchemaVersion SCHEMA_VERSION = de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.SchemaVersion.SCHEMA_VERSION;
 
     /**
      * No further instances allowed
@@ -67,6 +73,7 @@ public class Reqbaztrack extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
-            Activity.ACTIVITY);
+            Activity.ACTIVITY,
+            SchemaVersion.SCHEMA_VERSION);
     }
 }

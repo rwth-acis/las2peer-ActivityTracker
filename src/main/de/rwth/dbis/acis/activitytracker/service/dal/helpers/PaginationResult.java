@@ -26,20 +26,16 @@ public class PaginationResult<T extends EntityBase> {
         return elements;
     }
 
-    public int getPrevCursor() {
-        if (this.getElements().isEmpty()) {
-            return -1;
-        } else {
-            return this.getElements().get(0).getId();
-        }
-
-    }
-
-    public int getNextCursor() {
-        if (this.getElements().isEmpty()) {
-            return -1;
-        } else {
-            return this.getElements().get(this.getElements().size() - 1).getId();
+    public void trim(int maxSize) {
+        if(elements.size() > maxSize) {
+            if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
+                pageable.setAfterCursor(pageable.getAfterCursor() -
+                        (elements.size() - maxSize));
+            } else {
+                pageable.setBeforeCursor(pageable.getBeforeCursor() +
+                        (elements.size() - maxSize));
+            }
+            elements = elements.subList(0, maxSize);
         }
     }
 

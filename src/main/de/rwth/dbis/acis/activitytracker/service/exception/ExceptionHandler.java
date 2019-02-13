@@ -43,7 +43,7 @@ public enum ExceptionHandler {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String jsonInString = null;
         try {
-            jsonInString = mapper.writeValueAsString(exception);
+            jsonInString = mapper.writeValueAsString(exception.getErrorCode() + " " + exception.getLocalizedMessage());
         } catch (JsonProcessingException e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);
         }
