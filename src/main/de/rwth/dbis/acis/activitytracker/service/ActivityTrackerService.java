@@ -10,6 +10,7 @@ import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
+import de.rwth.dbis.acis.activitytracker.service.dal.jooq.Reqbaztrack;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
@@ -23,6 +24,7 @@ import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
+import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -74,13 +76,13 @@ public class ActivityTrackerService extends RESTService {
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
-        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setUrl(dbUrl + "?useSSL=false&serverTimezone=UTC");
         dataSource.setUsername(dbUserName);
         dataSource.setPassword(dbPassword);
@@ -116,13 +118,12 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        /* //TODO: vtor does not work after adding JSON field to Activity. We need to check why.
         Vtor vtor = new Vtor();
         vtor.validate(activity);
         if (vtor.hasViolations()) {
             ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
         }
-        */
+
         DALFacade dalFacade = null;
         try {
             dalFacade = this.getDBConnection();
@@ -206,6 +207,10 @@ public class ActivityTrackerService extends RESTService {
                 } else if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
                     logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
+                } else if (exCause instanceof ActivityTrackerException &&
+                        ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.UNKNOWN &&
+                        ((ActivityTrackerException) exCause).getLocation() == ExceptionLocation.NETWORK) {
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource could not be fetched, Network error. Skip object.");
                 } else {
                     throw ex;
                 }
@@ -214,7 +219,44 @@ public class ActivityTrackerService extends RESTService {
         return activitiesWithObjectBodies;
     }
 
-    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult, String path, Map<String, List<String>> httpParameter) throws URISyntaxException {
+    private boolean isVisible(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
+                              Activity activity, Map<String, Object> tempObjectStorage) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            if (tempObjectStorage.containsKey(activity.getDataUrl())) {
+                return true;
+            } else {
+                URI uri = new URIBuilder(activity.getDataUrl()).build();
+                HttpGet httpget = new HttpGet(uri);
+                if (!authorizationToken.isEmpty()) {
+                    httpget.addHeader("authorization", authorizationToken);
+                }
+                Future<String> dataFuture = executor.submit(new HttpRequestCallable(httpclient, httpget));
+                if (dataFuture != null) {
+                    tempObjectStorage.put(activity.getDataUrl(), mapper.readValue(dataFuture.get(), Object.class));
+                }
+            }
+            return true;
+        } catch (Exception ex) {
+            Throwable exCause = ex.getCause();
+            if (exCause instanceof ActivityTrackerException &&
+                    ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.AUTHORIZATION) {
+                logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Object not visible for user token or anonymous. Skip object.");
+            } else if (exCause instanceof ActivityTrackerException &&
+                    ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
+                logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
+            } else if (exCause instanceof ActivityTrackerException &&
+                    ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.UNKNOWN &&
+                    ((ActivityTrackerException) exCause).getLocation() == ExceptionLocation.NETWORK) {
+                logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource could not be fetched, Network error. Skip object.");
+            } else {
+                throw ex;
+            }
+        }
+        return false;
+    }
+
+    public Response.ResponseBuilder paginationLinks(Response.ResponseBuilder responseBuilder, Pageable pageable, String path, Map<String, List<String>> httpParameter) throws URISyntaxException {
         List<Link> links = new ArrayList<>();
 
         URIBuilder uriBuilder = new URIBuilder(baseURL + path);
@@ -223,45 +265,25 @@ public class ActivityTrackerService extends RESTService {
                 uriBuilder.addParameter(entry.getKey(), parameter);
             }
         }
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getPrevCursor())).build()).rel("prev").build());
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getNextCursor())).build()).rel("next").build());
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(paginationResult.getNextCursor())).build()).rel("prev").build());
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
-                links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(paginationResult.getPrevCursor())).build()).rel("next").build());
-            }
+        if (pageable.getBeforeCursor() != -1) {
+            URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+            links.add(Link.fromUri(uriBuilderTemp.addParameter("before", String.valueOf(pageable.getBeforeCursor())).build()).rel("prev").build());
+        }
+        if (pageable.getAfterCursor() != -1) {
+            URIBuilder uriBuilderTemp = new URIBuilder(uriBuilder.build());
+            links.add(Link.fromUri(uriBuilderTemp.addParameter("after", String.valueOf(pageable.getAfterCursor())).build()).rel("next").build());
         }
         responseBuilder = responseBuilder.links(links.toArray(new Link[links.size()]));
         return responseBuilder;
     }
 
-    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, PaginationResult paginationResult) {
-        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(paginationResult.getPageable().getLimit()));
-        if (paginationResult.getPageable().getSortDirection() == Pageable.SortDirection.ASC) {
-            if (paginationResult.getPrevCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getPrevCursor()));
-            }
-            if (paginationResult.getNextCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getNextCursor()));
-            }
-        } else {
-            if (paginationResult.getNextCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(paginationResult.getNextCursor()));
-            }
-            if (paginationResult.getPrevCursor() != -1) {
-                responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(paginationResult.getPrevCursor()));
-            }
+    public Response.ResponseBuilder xHeaderFields(Response.ResponseBuilder responseBuilder, Pageable pageable) {
+        responseBuilder = responseBuilder.header("X-Limit", String.valueOf(pageable.getLimit()));
+        if (pageable.getBeforeCursor() != -1) {
+            responseBuilder = responseBuilder.header("X-Cursor-Before", String.valueOf(pageable.getBeforeCursor()));
+        }
+        if (pageable.getAfterCursor() != -1) {
+            responseBuilder = responseBuilder.header("X-Cursor-After", String.valueOf(pageable.getAfterCursor()));
         }
         return responseBuilder;
     }
@@ -355,10 +377,13 @@ public class ActivityTrackerService extends RESTService {
 
             DALFacade dalFacade = null;
             try {
+                // Not both before and after parameter can be set at the same time
                 if (before != -1 && after != -1) {
                     ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.WRONG_PARAMETER, "both: before and after parameter not possible");
                 }
+                // Set cursor with before or after parameter
                 int cursor = before != -1 ? before : after;
+                // Set sortDirection with before or after parameter
                 Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
 
                 HashMap<String, List<String>> filters = new HashMap<>();
@@ -414,30 +439,31 @@ public class ActivityTrackerService extends RESTService {
                 Map<String, Object> tempObjectStorage = new HashMap<>();
 
                 int getObjectCount = 0;
+                Pageable pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
                 PaginationResult<Activity> activitiesPaginationResult;
                 List<Activity> activities = new ArrayList<>();
-                Pageable pageInfo = null;
                 while (activities.size() < limit && getObjectCount < 5) {
-                    pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
                     activitiesPaginationResult = dalFacade.findActivities(pageInfo);
                     getObjectCount++;
-                    cursor = sortDirection == Pageable.SortDirection.ASC ? cursor + limit : cursor - limit;
-                    if (cursor < 0) {
-                        cursor = 0;
-                    }
                     if (fillChildElements) {
                         activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
                     } else {
-                        activities.addAll(activitiesPaginationResult.getElements());
+                        for (Activity activity : activitiesPaginationResult.getElements()) {
+                            if (activity.isPublicActivity()) {
+                                activities.add(activity);
+                            } else if (service.isVisible(httpclient, executor, authorizationToken, activity, tempObjectStorage)) {
+                                activities.add(activity);
+                            }
+                        }
                     }
                 }
 
-                executor.shutdown();
-                if (activities.size() > limit) {
-                    activities = activities.subList(0, limit);
-                }
-
+                // create new PaginationResult from enriched activities
                 activitiesPaginationResult = new PaginationResult<>(pageInfo, activities);
+                // trim result to limit
+                activitiesPaginationResult.trim(limit);
+
+                executor.shutdown();
 
                 Map<String, List<String>> parameter = new HashMap<>();
                 parameter.put("limit", new ArrayList() {{
@@ -487,8 +513,8 @@ public class ActivityTrackerService extends RESTService {
 
                 Response.ResponseBuilder responseBuilder = Response.ok();
                 responseBuilder = responseBuilder.entity(activitiesPaginationResult.toJSON());
-                responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult, "", parameter);
-                responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult);
+                responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult.getPageable(), "", parameter);
+                responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult.getPageable());
                 Response response = responseBuilder.build();
 
                 return response;
@@ -508,7 +534,8 @@ public class ActivityTrackerService extends RESTService {
         @POST
         @Consumes(MediaType.APPLICATION_JSON)
         @Produces(MediaType.APPLICATION_JSON)
-        @ApiOperation(value = "This method allows to create an activity",
+        @ApiOperation(value = "This method allows to create an activity. " +
+                "To create a private activity please set the 'publicActivity' to false.",
                 notes = "Returns the created activity")
         @ApiResponses(value = {
                 @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
@@ -520,8 +547,12 @@ public class ActivityTrackerService extends RESTService {
                 Activity createdActivity = service.storeActivity(activity);
                 return Response.status(Response.Status.CREATED).entity(createdActivity.toJSON()).build();
             } catch (ActivityTrackerException atException) {
-                service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+                if (atException.getErrorCode().equals(ErrorCode.VALIDATION)) {
+                    return Response.status(Response.Status.BAD_REQUEST).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+                } else {
+                    service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
+                }
             }
         }
 

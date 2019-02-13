@@ -59,8 +59,6 @@ You need to configure the the service to your own specific environment. Here is 
  - `dbUserName`:	Database username, which will be used to access the database
  - `dbPassword`:	Database user password, which will be used to access the database
  - `dbUrl`:			JDBC Connection string to access the database
- - `land`:          Default language setting
- - `country`:       Default country setting
  - `baseURL`:       Base URL this service runs on
  - `mqttBroker`:    MQTT Broker, if this field is set it enables MQTT publish of new activities
  - `mqttUserName`:  MQTT username to publish to broker, if this field is set MQTT use username and password. If not it MQTT doe not use authorize to broker.

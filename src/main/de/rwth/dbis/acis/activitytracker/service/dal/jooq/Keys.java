@@ -5,7 +5,9 @@ package de.rwth.dbis.acis.activitytracker.service.dal.jooq;
 
 
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity;
+import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.SchemaVersion;
 import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.SchemaVersionRecord;
 
 import javax.annotation.Generated;
 
@@ -39,6 +41,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<ActivityRecord> KEY_ACTIVITY_PRIMARY = UniqueKeys0.KEY_ACTIVITY_PRIMARY;
+    public static final UniqueKey<SchemaVersionRecord> KEY_SCHEMA_VERSION_PRIMARY = UniqueKeys0.KEY_SCHEMA_VERSION_PRIMARY;
 
     // -------------------------------------------------------------------------
     // FOREIGN KEY definitions
@@ -55,5 +58,6 @@ public class Keys {
 
     private static class UniqueKeys0 extends AbstractKeys {
         public static final UniqueKey<ActivityRecord> KEY_ACTIVITY_PRIMARY = createUniqueKey(Activity.ACTIVITY, "KEY_activity_PRIMARY", Activity.ACTIVITY.ID);
+        public static final UniqueKey<SchemaVersionRecord> KEY_SCHEMA_VERSION_PRIMARY = createUniqueKey(SchemaVersion.SCHEMA_VERSION, "KEY_schema_version_PRIMARY", SchemaVersion.SCHEMA_VERSION.INSTALLED_RANK);
     }
 }
