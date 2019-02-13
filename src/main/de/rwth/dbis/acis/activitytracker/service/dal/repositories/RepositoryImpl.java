@@ -1,7 +1,6 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.repositories;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.EntityBase;
-import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
 import de.rwth.dbis.acis.activitytracker.service.dal.transform.Transformer;
@@ -135,16 +134,18 @@ public class RepositoryImpl<E extends EntityBase, R extends Record> implements R
             }
 
             // update cursors
-            pageable.setCursor(entries.get(entries.size()-1).getId());
-            if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
-                if (pageable.getBeforeCursor() == 0) {
-                    pageable.setBeforeCursor(entries.get(0).getId());
-                }
-                pageable.setAfterCursor(entries.get(entries.size()-1).getId());
-            } else {
-                pageable.setBeforeCursor(entries.get(entries.size()-1).getId());
-                if (pageable.getAfterCursor() == 0) {
-                    pageable.setAfterCursor(entries.get(0).getId());
+            if (!entries.isEmpty()) {
+                pageable.setCursor(entries.get(entries.size() - 1).getId());
+                if (pageable.getSortDirection() == Pageable.SortDirection.ASC) {
+                    if (pageable.getBeforeCursor() == 0) {
+                        pageable.setBeforeCursor(entries.get(0).getId());
+                    }
+                    pageable.setAfterCursor(entries.get(entries.size() - 1).getId());
+                } else {
+                    pageable.setBeforeCursor(entries.get(entries.size() - 1).getId());
+                    if (pageable.getAfterCursor() == 0) {
+                        pageable.setAfterCursor(entries.get(0).getId());
+                    }
                 }
             }
 
