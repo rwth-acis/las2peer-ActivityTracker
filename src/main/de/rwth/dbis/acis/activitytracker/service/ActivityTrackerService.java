@@ -17,8 +17,9 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
+import i5.las2peer.api.ServiceException;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
@@ -28,7 +29,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
@@ -539,8 +542,9 @@ public class ActivityTrackerService extends RESTService {
             try {
                 String serviceNameVersion = Context.getCurrent().getService().getAgent().getServiceNameVersion().toString();
                 return Response.ok("{\"version\": \"" + serviceNameVersion + "\"}").build();
-            } catch (Exception ex) {
+            } catch (ServiceException ex) {
                 ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, ex.getMessage());
+                Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR, "Get service name version failed");
                 service.logger.warning(atException.getMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ExceptionHandler.getInstance().toJSON(atException)).build();
             }

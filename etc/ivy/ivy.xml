@@ -10,7 +10,7 @@
     </publications>
     <dependencies>
         <!-- platform dependencies -->
-        <dependency org="i5" name="las2peer-bundle" rev="0.7.2" changing="true" conf="platform->*"/>
+        <dependency org="i5" name="las2peer-bundle" rev="${core.version}" changing="true" conf="platform->*" />
         <dependency org="junit" name="junit" rev="4.12" conf="platform->*"/>
         <dependency org="mysql" name="mysql-connector-java" rev="6.0.5" conf="platform->*"/>
         <dependency org="org.flywaydb" name="flyway-ant" rev="4.2.0" conf="platform->*"/>
