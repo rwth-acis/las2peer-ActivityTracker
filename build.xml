@@ -1,5 +1,7 @@
 <project name="las2peer-ActivityTracker" default="all" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:flyway="antlib:org.flywaydb.ant">
 
+    <property name="core.version" value="0.7.6"/>
+
     <property file="etc/ant_configuration/user.properties"/>
     <property file="etc/ant_configuration/service.properties"/>
 
@@ -295,6 +297,7 @@
         <echo file="${passphrases.path}" append="false">agent-user-${las2peer_user1.name}.xml;${las2peer_user1.password}
             agent-user-${las2peer_user2.name}.xml;${las2peer_user2.password}
             agent-user-${las2peer_user3.name}.xml;${las2peer_user3.password}
+            ${service.name}.${service.class}.xml;${service.passphrase}
         </echo>
     </target>
 
