@@ -88,7 +88,7 @@
         <mkdir dir="${service}"/>
     </target>
 
-    <target name="init_compile" depends="init_general">
+    <target name="init_compile" depends="init_general, get_deps">
         <mkdir dir="${tmp.classes}"/>
         <mkdir dir="${tmp.junit}"/>
     </target>
@@ -167,7 +167,7 @@
 
     
     <!-- Generate Jars -->
-    <target name="jar" description="--> jar">
+    <target name="jar" depends="compile_main" description="--> jar">
         <jar jarfile="${export.jars}/${service.name}-${service.version}.jar">
             <zipgroupfileset dir="${servicelib}" includes="**/*.jar" />
             <fileset dir="${tmp.classes}" includes="${service.path}/**" />
