@@ -336,18 +336,18 @@ public class ActivityTrackerService extends RESTService {
                 @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
                 @ApiParam(value = "Parameter to include or exclude the child elements 'data', 'parentData' and 'user'", required = false, allowableValues = "true, false") @DefaultValue("true") @QueryParam("fillChildElements") boolean fillChildElements,
                 @ApiParam(value = "Search string", required = false) @QueryParam("search") String search,
-                @ApiParam(value = "activityAction filter", required = false) @QueryParam("activityAction") String activityActionFilter,
-                @ApiParam(value = "origin filter", required = false) @QueryParam("origin") String originFilter,
-                @ApiParam(value = "dataType filter", required = false) @QueryParam("dataType") String dataTypeFilter,
-                @ApiParam(value = "dataUrl filter", required = false) @QueryParam("dataUrl") String dataUrlFilter,
-                @ApiParam(value = "parentDataType filter", required = false) @QueryParam("parentDataType") String parentDataTypeFilter,
-                @ApiParam(value = "parentDataUrl filter", required = false) @QueryParam("parentDataUrl") String parentDataUrlFilter,
-                @ApiParam(value = "userUrl filter", required = false) @QueryParam("userUrl") String userUrlFilter,
+                @ApiParam(value = "activityAction filter", required = false, allowMultiple = true) @QueryParam("activityAction") List<String> activityActionFilter,
+                @ApiParam(value = "origin filter", required = false, allowMultiple = true) @QueryParam("origin") List<String> originFilter,
+                @ApiParam(value = "dataType filter", required = false, allowMultiple = true) @QueryParam("dataType") List<String>  dataTypeFilter,
+                @ApiParam(value = "dataUrl filter", required = false, allowMultiple = true) @QueryParam("dataUrl") List<String> dataUrlFilter,
+                @ApiParam(value = "parentDataType filter", required = false, allowMultiple = true) @QueryParam("parentDataType") List<String> parentDataTypeFilter,
+                @ApiParam(value = "parentDataUrl filter", required = false, allowMultiple = true) @QueryParam("parentDataUrl") List<String> parentDataUrlFilter,
+                @ApiParam(value = "userUrl filter", required = false, allowMultiple = true) @QueryParam("userUrl") List<String> userUrlFilter,
                 @ApiParam(value = "MySQL extract query on additionalObject json field. " +
                         "Syntax:\"$.a.b\" to test object b inside object a. \"$[1][2]\" to test second array element inside first array. \"$.a[2].b\" to test object b inside second array element inside object a." +
                         "Operators: =, !=, <, >, IS NULL, IS NOT NULL " +
                         "Example: \"$.project.id\"=3"
-                        , required = false) @QueryParam("additionalObject") List<String> additionalObject,
+                        , required = false) @QueryParam("additionalObject") String additionalObject,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) throws ActivityTrackerException {
 
             DALFacade dalFacade = null;
@@ -359,43 +359,31 @@ public class ActivityTrackerService extends RESTService {
                 Pageable.SortDirection sortDirection = after != -1 ? Pageable.SortDirection.ASC : Pageable.SortDirection.DESC;
 
                 HashMap<String, List<String>> filters = new HashMap<>();
-                if (activityActionFilter != null) {
-                    filters.put("activityAction", new ArrayList() {{
-                        add(activityActionFilter);
-                    }});
+                if (!activityActionFilter.isEmpty()) {
+                    filters.put("activityAction", activityActionFilter);
                 }
-                if (originFilter != null) {
-                    filters.put("origin", new ArrayList() {{
-                        add(originFilter);
-                    }});
+                if (!originFilter.isEmpty()) {
+                    filters.put("origin", originFilter);
                 }
-                if (dataTypeFilter != null) {
-                    filters.put("dataType", new ArrayList() {{
-                        add(dataTypeFilter);
-                    }});
+                if (!dataTypeFilter.isEmpty()) {
+                    filters.put("dataType", dataTypeFilter);
                 }
-                if (dataUrlFilter != null) {
-                    filters.put("dataUrl", new ArrayList() {{
-                        add(dataUrlFilter);
-                    }});
+                if (!dataUrlFilter.isEmpty()) {
+                    filters.put("dataUrl", dataUrlFilter);
                 }
-                if (parentDataTypeFilter != null) {
-                    filters.put("parentDataType", new ArrayList() {{
-                        add(parentDataTypeFilter);
-                    }});
+                if (!parentDataTypeFilter.isEmpty()) {
+                    filters.put("parentDataType",parentDataTypeFilter);
                 }
-                if (parentDataUrlFilter != null) {
-                    filters.put("parentDataUrl", new ArrayList() {{
-                        add(parentDataUrlFilter);
-                    }});
+                if (!parentDataUrlFilter.isEmpty()) {
+                    filters.put("parentDataUrl", parentDataUrlFilter);
                 }
-                if (userUrlFilter != null) {
-                    filters.put("userUrl", new ArrayList() {{
-                        add(userUrlFilter);
-                    }});
+                if (!userUrlFilter.isEmpty()) {
+                    filters.put("userUrl", userUrlFilter);
                 }
                 if (additionalObject != null) {
-                    filters.put("additionalObject", additionalObject);
+                    filters.put("additionalObject", new ArrayList() {{
+                        add(additionalObject);
+                    }});
                 }
 
                 dalFacade = service.getDBConnection();
@@ -445,42 +433,33 @@ public class ActivityTrackerService extends RESTService {
                         add(String.valueOf(fillChildElements));
                     }});
                 }
-                if (activityActionFilter != null) {
-                    parameter.put("activityAction", new ArrayList() {{
-                        add(activityActionFilter);
+                if (!activityActionFilter.isEmpty()) {
+                    parameter.put("activityAction", activityActionFilter);
+                }
+                if (!originFilter.isEmpty()) {
+                    parameter.put("origin", originFilter);
+                }
+                if (!dataTypeFilter.isEmpty()) {
+                    parameter.put("dataType", dataTypeFilter);
+                }
+                if (!dataUrlFilter.isEmpty()) {
+                    parameter.put("dataUrl", dataUrlFilter);
+                }
+                if (!parentDataTypeFilter.isEmpty()) {
+                    parameter.put("parentDataType", parentDataTypeFilter);
+                }
+                if (!parentDataUrlFilter.isEmpty()) {
+                    parameter.put("parentDataUrl", parentDataUrlFilter);
+                }
+                if (!userUrlFilter.isEmpty()) {
+                    parameter.put("userUrl", userUrlFilter);
+                }
+                if (additionalObject != null) {
+                    parameter.put("additionalObject", new ArrayList() {{
+                        add(additionalObject);
                     }});
                 }
-                if (originFilter != null) {
-                    parameter.put("origin", new ArrayList() {{
-                        add(originFilter);
-                    }});
-                }
-                if (dataTypeFilter != null) {
-                    parameter.put("dataType", new ArrayList() {{
-                        add(dataTypeFilter);
-                    }});
-                }
-                if (dataUrlFilter != null) {
-                    parameter.put("dataUrl", new ArrayList() {{
-                        add(dataUrlFilter);
-                    }});
-                }
-                if (parentDataTypeFilter != null) {
-                    parameter.put("parentDataType", new ArrayList() {{
-                        add(parentDataTypeFilter);
-                    }});
-                }
-                if (parentDataUrlFilter != null) {
-                    parameter.put("parentDataUrl", new ArrayList() {{
-                        add(parentDataUrlFilter);
-                    }});
-                }
-                if (userUrlFilter != null) {
-                    parameter.put("userUrl", new ArrayList() {{
-                        add(userUrlFilter);
-                    }});
-                }
-                parameter.put("additionalObject", additionalObject);
+
 
                 Response.ResponseBuilder responseBuilder = Response.ok();
                 responseBuilder = responseBuilder.entity(activitiesPaginationResult.toJSON());

@@ -111,39 +111,25 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         List<Condition> conditions = new ArrayList<>();
         for (Map.Entry<String, List<String>> filterEntry : filters.entrySet()) {
             if (filterEntry.getKey().equals("activityAction")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.ACTIVITY_ACTION.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.ACTIVITY_ACTION));
             }
             if (filterEntry.getKey().equals("origin")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.ORIGIN.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.ORIGIN));
             }
             if (filterEntry.getKey().equals("dataType")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.DATA_TYPE.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.DATA_TYPE));          //conditions.add(ACTIVITY.DATA_TYPE.in(filterEntry.getValue())); more elegant but no way to make case-insensitive
             }
             if (filterEntry.getKey().equals("dataUrl")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.DATA_URL.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.DATA_URL));
             }
             if (filterEntry.getKey().equals("parentDataType")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.PARENT_DATA_TYPE.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.PARENT_DATA_TYPE));
             }
             if (filterEntry.getKey().equals("parentDataUrl")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.PARENT_DATA_URL.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.PARENT_DATA_URL));
             }
             if (filterEntry.getKey().equals("userUrl")) {
-                for (String filter : filterEntry.getValue()) {
-                    conditions.add(ACTIVITY.USER_URL.equalIgnoreCase(filter));
-                }
+                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.USER_URL));
             }
             if (filterEntry.getKey().equals("additionalObject")) {
                 for (String filter : filterEntry.getValue()) {
@@ -151,7 +137,19 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                     conditions.add(DSL.condition("additional_object -> " + filter));
                 }
             }
+
+
+
+
         }
         return conditions;
+    }
+
+    private Condition listToOrConcat(List<String> entries, TableField<ActivityRecord, String> field){
+        Condition result = DSL.falseCondition();
+        for (String entry : entries) {
+            result = result.or(field.equalIgnoreCase(entry));
+        }
+        return result;
     }
 }
