@@ -368,6 +368,10 @@ public class ActivityTrackerService extends RESTService {
                 @ApiParam(value = "parentDataType filter", required = false, allowMultiple = true) @QueryParam("parentDataType") List<String> parentDataTypeFilter,
                 @ApiParam(value = "parentDataUrl filter", required = false, allowMultiple = true) @QueryParam("parentDataUrl") List<String> parentDataUrlFilter,
                 @ApiParam(value = "userUrl filter", required = false, allowMultiple = true) @QueryParam("userUrl") List<String> userUrlFilter,
+                @ApiParam(value = "Combined filter on activityAction, dataType and optionally parentDataType"
+                        + "Syntax: activityAction-dataType[-parentDataType] ; use * as wildcard"+
+                        "Example: a-b => activityAction == a && dataType ==b; a-*-c => activityAction==a && parentDataType == c"
+                        , required = false, allowMultiple = true) @QueryParam("combinedFilter") List<String> combinedFilter,
                 @ApiParam(value = "MySQL extract query on additionalObject json field. " +
                         "Syntax:\"$.a.b\" to test object b inside object a. \"$[1][2]\" to test second array element inside first array. \"$.a[2].b\" to test object b inside second array element inside object a." +
                         "Operators: =, !=, <, >, IS NULL, IS NOT NULL " +
@@ -407,6 +411,9 @@ public class ActivityTrackerService extends RESTService {
                 }
                 if (!userUrlFilter.isEmpty()) {
                     filters.put("userUrl", userUrlFilter);
+                }
+                if (!combinedFilter.isEmpty()) {
+                    filters.put("combinedFilter", combinedFilter);
                 }
                 if (additionalObject != null) {
                     filters.put("additionalObject", new ArrayList() {{
@@ -482,6 +489,9 @@ public class ActivityTrackerService extends RESTService {
                 }
                 if (!userUrlFilter.isEmpty()) {
                     parameter.put("userUrl", userUrlFilter);
+                }
+                if (!combinedFilter.isEmpty()) {
+                    parameter.put("combinedFilter", combinedFilter);
                 }
                 if (additionalObject != null) {
                     parameter.put("additionalObject", new ArrayList() {{

@@ -139,9 +139,26 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                     conditions.add(DSL.condition("additional_object -> " + filter));
                 }
             }
-
-
-
+            if (filterEntry.getKey().equals("combinedFilter")) {
+                Condition orConcat = DSL.falseCondition();
+                for (String filter : filterEntry.getValue()) {
+                    Condition andConcat = DSL.trueCondition();
+                    String[] parts = filter.split("-");
+                    if(parts.length>=2){
+                        if(!parts[0].equals("*")){
+                            andConcat = andConcat.and(ACTIVITY.ACTIVITY_ACTION.equalIgnoreCase(parts[0]));
+                        }
+                        if(!parts[1].equals("*")){
+                            andConcat = andConcat.and(ACTIVITY.DATA_TYPE.equalIgnoreCase(parts[1]));
+                        }
+                        if(parts.length == 3 && !parts[2].equals("*")){
+                            andConcat = andConcat.and(ACTIVITY.PARENT_DATA_TYPE.equalIgnoreCase(parts[2]));
+                        }
+                        orConcat = orConcat.or(andConcat);
+                    }
+                }
+                conditions.add(orConcat);
+            }
 
         }
         return conditions;
