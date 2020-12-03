@@ -1,6 +1,7 @@
 <project name="las2peer-ActivityTracker" default="all" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:flyway="antlib:org.flywaydb.ant">
 
-    <property name="core.version" value="0.8-SNAPSHOT"/>
+    <property name="core.version" value="1.0.0"/>
+    <property name="mysql.version" value="8.0.22"/>
 
     <property file="etc/ant_configuration/user.properties"/>
     <property file="etc/ant_configuration/service.properties"/>
@@ -38,7 +39,7 @@
         </fileset>
     </path>
 
-    <property name="lib.junit" location="${lib}/junit-4.12.jar"/>
+    <property name="lib.junit" location="${lib}/junit-4.13.1.jar"/>
 
 
     <!-- Ivy Installation (Tool to fetch Libraries) -->
@@ -51,7 +52,7 @@
     <target name="download-ivy" unless="skip.download">
         <mkdir dir="${ivy.jar.dir}"/>
         <echo message="installing ivy..."/>
-        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+        <get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
              dest="${ivy.jar.file}" usetimestamp="true" skipexisting="true"/>
     </target>
     <!-- Try to load Ivy here from local Ivy directory -->
@@ -66,7 +67,7 @@
     <!-- Get Dependencies from our Maven Repository via Ivy -->
     <target name="get_deps" depends="install-ivy, init_deps" description="--> resolve dependencies">
         <ivy:settings>
-            <credentials host="role.dbis.rwth-aachen.de:9911/archiva"  realm="Repository internal"/>
+            <credentials host="archiva.dbis.rwth-aachen.de:9911"  realm="Repository internal"/>
         </ivy:settings>
         <ivy:retrieve type="jar, bundle, eclipse-plugin" conf="platform" pattern="${lib}/[artifact]-[revision].[ext]"/>
         <ivy:retrieve type="jar, bundle, eclipse-plugin" conf="bundle" pattern="${servicelib}/[artifact]-[revision].[ext]"/>
@@ -165,7 +166,7 @@
         </echo>
     </target>
 
-    
+
     <!-- Generate Jars -->
     <target name="jar" depends="compile_main" description="--> jar">
         <jar jarfile="${export.jars}/${service.name}-${service.version}.jar">
@@ -275,7 +276,7 @@
             <classpath>
                 <pathelement location="${lib}/flyway-core-4.2.0.jar"/>
                 <pathelement location="${lib}/flyway-ant-4.2.0.jar"/>
-                <pathelement location="${lib}/mysql-connector-java-6.0.5.jar"/>
+                <pathelement location="${lib}/mysql-connector-java-${mysql.version}.jar"/>
             </classpath>
         </taskdef>
 
