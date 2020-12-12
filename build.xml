@@ -83,6 +83,7 @@
     <target name="init_general">
         <tstamp/>
         <mkdir dir="${tmp}"/>
+        <mkdir dir="${tmp.bundle}"/>
         <mkdir dir="${export}"/>
         <mkdir dir="${startup}"/>
         <mkdir dir="${log}"/>
@@ -170,7 +171,7 @@
     <!-- Generate Jars -->
     <target name="jar" depends="compile_main" description="--> jar">
         <jar jarfile="${export.jars}/${service.name}-${service.version}.jar">
-            <zipgroupfileset dir="${servicelib}" includes="**/*.jar" />
+            <zipgroupfileset dir="${servicelib}" includes="**/*.jar" excludes="META-INF/ECLIPSE_.*"/>
             <fileset dir="${tmp.classes}" includes="${service.path}/**" />
             <manifest>
                 <attribute name="Library-Version" value="${service.version}" />
@@ -180,7 +181,7 @@
         </jar>
         <!-- Add the same Jar to the Service Directory !-->
         <jar jarfile="${service}/${service.name}-${service.version}.jar">
-            <zipgroupfileset dir="${servicelib}" includes="**/*.jar" />
+            <zipgroupfileset dir="${servicelib}" includes="**/*.jar" excludes="META-INF/ECLIPSE_.*"/>
             <fileset dir="${tmp.classes}" includes="${service.path}/**" />
             <manifest>
                 <attribute name="Library-Version" value="${service.version}" />
@@ -190,10 +191,11 @@
         </jar>
     </target>
 
-    <!-- Generate Jars ncluding all deps -->
+    <!-- Generate Jars including all deps -->
     <target name="jar-big" depends="compile_main" description="--> build service jar including all deps">
         <jar jarfile="${service}/${service.name}-${service.version}.jar">
             <fileset dir="${tmp.classes}" />
+            <zipgroupfileset dir="${servicelib}" includes="**/*.jar" />
             <zipgroupfileset dir="${tmp.bundle}" />
             <manifest>
                 <attribute name="las2peer-service-name" value="${service.name}" />
@@ -296,13 +298,12 @@
               failonerror="true"
               fork="true">
             <jvmarg value="-Xdebug"/>
-            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5432"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5434"/>
             <arg value='-p'/>
             <arg value='9012'/>
-            <!--
+
                         <arg value='-b'/>
-                        <arg value='192.168.178.24:9011'/>
-             -->
+                        <arg value='192.168.178.28:9011'/>
             <arg value='--service-directory'/>
             <arg value='service'/>
             <arg value='uploadStartupDirectory'/>

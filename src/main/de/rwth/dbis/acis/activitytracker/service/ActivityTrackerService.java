@@ -10,7 +10,6 @@ import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PageInfo;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.PaginationResult;
-import de.rwth.dbis.acis.activitytracker.service.dal.jooq.Reqbaztrack;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
@@ -110,10 +109,10 @@ public class ActivityTrackerService extends RESTService {
             mapper.readValue(activity, Activity.class);
             Activity activityToCreate = mapper.readValue(activity, Activity.class);
             this.storeActivity(activityToCreate);
-            return new Integer(Response.Status.CREATED.getStatusCode()).toString();
+            return Integer.toString(Response.Status.CREATED.getStatusCode());
         } catch (Exception exception) {
             logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + exception.getMessage());
-            return new Integer(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).toString();
+            return Integer.toString(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
 
@@ -133,8 +132,7 @@ public class ActivityTrackerService extends RESTService {
             }
             return createdActivity;
         } catch (Exception ex) {
-            ActivityTrackerException atException = ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
-            throw atException;
+            throw ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
         } finally {
             this.closeDBConnection(dalFacade);
         }
@@ -323,7 +321,7 @@ public class ActivityTrackerService extends RESTService {
     @SwaggerDefinition(
             info = @Info(
                     title = "las2peer Activity Service",
-                    version = "0.8.0",
+                    version = "0.8.1",
                     description = "An activity tracker for las2peer and other web services.",
                     termsOfService = "http://requirements-bazaar.org",
                     contact = @Contact(
