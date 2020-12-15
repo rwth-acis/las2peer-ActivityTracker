@@ -1,13 +1,16 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import i5.las2peer.api.p2p.ServiceNameVersion;
+import i5.las2peer.connectors.webConnector.WebConnector;
+import i5.las2peer.connectors.webConnector.client.ClientResponse;
+import i5.las2peer.connectors.webConnector.client.MiniClient;
 import i5.las2peer.p2p.LocalNode;
-import i5.las2peer.p2p.ServiceNameVersion;
-import i5.las2peer.security.ServiceAgent;
-import i5.las2peer.security.UserAgent;
+import i5.las2peer.p2p.LocalNodeManager;
+import i5.las2peer.security.UserAgentImpl;
 import i5.las2peer.testing.MockAgentFactory;
-import i5.las2peer.webConnector.WebConnector;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -18,119 +21,86 @@ import java.io.PrintStream;
  */
 public class ActivityTrackerTest {
 
-    private static final String HTTP_ADDRESS = "http://127.0.0.1";
-    private static final int HTTP_PORT = WebConnector.DEFAULT_HTTP_PORT;
     private static final String testPass = "adamspass";
-    // during testing, the specified service version does not matter
-    private static final ServiceNameVersion activityTrackerService = new ServiceNameVersion(ActivityTrackerService.class.getCanonicalName(), "1.0");
-    private static final String mainPath = "template/";
+    private static final String mainPath = "activity/";
     private static LocalNode node;
     private static WebConnector connector;
     private static ByteArrayOutputStream logStream;
-    private static UserAgent testAgent;
+    private static UserAgentImpl testAgent;
 
     /**
-     * Called before the tests start.
+     * Called before a test starts.
      * <p>
-     * Sets up the node and initializes connector and users that can be used throughout the tests.
+     * Sets up the node, initializes connector and adds user agent that can be used throughout the test.
      *
      * @throws Exception
      */
-    @BeforeClass
-    public static void startServer() throws Exception {
-
+    @Before
+    public void startServer() throws Exception {
         // start node
-        node = LocalNode.newNode();
-        testAgent = MockAgentFactory.getAdam();
-        testAgent.unlockPrivateKey(testPass); // agent must be unlocked in order to be stored
-        node.storeAgent(testAgent);
+        node = new LocalNodeManager().newNode();
         node.launch();
 
-        ServiceAgent testService = ServiceAgent.createServiceAgent(activityTrackerService, "a pass");
-        testService.unlockPrivateKey("a pass");
+        // add agent to node
+        testAgent = MockAgentFactory.getAdam();
+        testAgent.unlock(testPass); // agents must be unlocked in order to be stored
+        node.storeAgent(testAgent);
 
-        node.registerReceiver(testService);
+        // start service
+        // during testing, the specified service version does not matter
+        node.startService(new ServiceNameVersion(ActivityTrackerService.class.getName(), "0.8.1"), "a pass");
 
         // start connector
+        connector = new WebConnector(true, 0, false, 0); // port 0 means use system defined port
         logStream = new ByteArrayOutputStream();
-
-        connector = new WebConnector(true, HTTP_PORT, false, 1000);
         connector.setLogStream(new PrintStream(logStream));
         connector.start(node);
-        Thread.sleep(1000); // wait a second for the connector to become ready
-        testAgent = MockAgentFactory.getAdam(); // get a locked agent
     }
 
     /**
-     * Called after the tests have finished.
-     * Shuts down the server and prints out the connector log file for reference.
+     * Called after the test has finished. Shuts down the server and prints out the connector log file for reference.
      *
      * @throws Exception
      */
-    @AfterClass
-    public static void shutDownServer() throws Exception {
+    @After
+    public void shutDownServer() throws Exception {
+        if (connector != null) {
+            connector.stop();
+            connector = null;
+        }
+        if (node != null) {
+            node.shutDown();
+            node = null;
+        }
+        if (logStream != null) {
+            System.out.println("Connector-Log:");
+            System.out.println("--------------");
+            System.out.println(logStream.toString());
+            logStream = null;
+        }
+    }
 
-        connector.stop();
-        node.shutDown();
+    private MiniClient getClient() {
+        MiniClient client = new MiniClient();
+        client.setConnectorEndpoint(connector.getHttpEndpoint());
 
-        connector = null;
-        node = null;
-
-        LocalNode.reset();
-
-        System.out.println("Connector-Log:");
-        System.out.println("--------------");
-
-        System.out.println(logStream.toString());
-
+        client.setLogin(testAgent.getIdentifier(), testPass);
+        return client;
     }
 
     /**
-     * Tests the validation method.
+     * Test to get menus for some available canteens.
      */
     @Test
-    public void testGet() {
-        /*
-        MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
-
-		try
-		{
-			c.setLogin(Long.toString(testAgent.getId()), testPass);
-			ClientResponse result = c.sendRequest("GET", mainPath + "get", "");
-			assertEquals(200, result.getHttpCode());
-			assertTrue(result.getResponse().trim().contains("result")); // YOUR RESULT VALUE HERE
-			System.out.println("Result of 'testGet': " + result.getResponse().trim());
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-			fail("Exception: " + e);
-		}
-        */
-    }
-
-    /**
-     * Test the example method that consumes one path parameter
-     * which we give the value "testInput" in this test.
-     */
-    @Test
-    public void testPost() {
-        /*
-        MiniClient c = new MiniClient();
-        c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
-
+    public void testGetActivities() {
         try {
-            c.setLogin(Long.toString(testAgent.getId()), testPass);
-            ClientResponse result = c.sendRequest("POST", mainPath + "post/testInput", ""); // testInput is
-            // the pathParam
-            assertEquals(200, result.getHttpCode());
-            assertTrue(result.getResponse().trim().contains("testInput")); // "testInput" name is part of response
-            System.out.println("Result of 'testPost': " + result.getResponse().trim());
+            MiniClient client = getClient();
+
+            ClientResponse result = client.sendRequest("GET", mainPath, "");
+            System.out.println(result.toString());
         } catch (Exception e) {
             e.printStackTrace();
-            fail("Exception: " + e);
+            Assert.fail(e.toString());
         }
-        */
     }
-
 }
