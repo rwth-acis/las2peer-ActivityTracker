@@ -22,7 +22,7 @@ import java.io.PrintStream;
 public class ActivityTrackerTest {
 
     private static final String testPass = "adamspass";
-    private static final String mainPath = "activity/";
+    private static final String mainPath = "activities/";
     private static LocalNode node;
     private static WebConnector connector;
     private static ByteArrayOutputStream logStream;
