@@ -255,8 +255,7 @@ public class Activity extends EntityBase {
         }
 
         public Activity build() {
-            Activity created = new Activity(this);
-            return created;
+            return new Activity(this);
         }
     }
 }

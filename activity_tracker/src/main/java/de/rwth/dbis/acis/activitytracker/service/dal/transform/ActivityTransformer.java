@@ -5,18 +5,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
-import de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.records.ActivityRecord;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
+import de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.records.ActivityRecord;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import java.util.*;
 
 import static de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.Activity.ACTIVITY;
-import static org.jooq.impl.DSL.condition;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
 
@@ -44,7 +43,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         try {
             if (record.getAdditionalObject() != null) {
                 ObjectMapper mapper = new ObjectMapper();
-                actualObj = mapper.readTree((String) record.getAdditionalObject());
+                actualObj = mapper.readTree(record.getAdditionalObject());
             }
         } catch (Exception e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);
@@ -62,7 +61,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 .parentDataType(record.getParentDataType())
                 .userUrl(record.getUserUrl())
                 .publicActivity(record.getPublic() == 1)
-                .additionalObject(record.getAdditionalObject() == null ? null : actualObj)
+                .additionalObject(actualObj)
                 .build();
     }
 
@@ -83,7 +82,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
 
     @Override
     public Map<Field, Object> getUpdateMap(Activity entity) {
-        return new HashMap<Field, Object>();
+        return new HashMap<>();
     }
 
     @Override
@@ -103,13 +102,13 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
     }
 
     @Override
-    public Condition getSearchCondition(String search) throws Exception {
+    public Condition getSearchCondition(String search) {
         return ACTIVITY.ACTIVITY_ACTION.likeIgnoreCase("%" + search + "%")
                 .or(ACTIVITY.DATA_TYPE.likeIgnoreCase("%" + search + "%"));
     }
 
     @Override
-    public Collection<? extends Condition> getFilterConditions(Map<String, List<String>> filters) throws Exception {
+    public Collection<? extends Condition> getFilterConditions(Map<String, List<String>> filters) {
         List<Condition> conditions = new ArrayList<>();
         for (Map.Entry<String, List<String>> filterEntry : filters.entrySet()) {
             if (filterEntry.getKey().equals("activityAction")) {
