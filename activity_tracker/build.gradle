@@ -8,7 +8,7 @@
 buildscript {
     configurations["classpath"].resolutionStrategy.eachDependency {
         if (requested.group == "org.jooq") {
-            useVersion("3.14.4")
+            useVersion("${project.property('jooq.version')}")
         }
     }
 }

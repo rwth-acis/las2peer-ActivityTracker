@@ -33,5 +33,5 @@ jobs:
           done
       - name: Build with Gradle
         env:
-          ORG_GRADLE_PROJECT_db.port: ${{ job.services.mysql.ports[3306] }}
-        run: ./gradlew clean build
+          PORT: ${{ job.services.mysql.ports[3306] }}
+        run: ./gradlew clean build -Pdb.port=$PORT
