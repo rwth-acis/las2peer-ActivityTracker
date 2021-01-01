@@ -129,7 +129,7 @@ jooq {
                     }
                     target {
                         packageName = 'de.rwth.dbis.acis.activitytracker.service'
-                        directory = 'build/generated-src/jooq/main'  // default (can be omitted)
+                        directory = 'build/generated/jooq/main'  // default (can be omitted)
                     }
                     strategy.name = 'org.jooq.codegen.DefaultGeneratorStrategy'
                 }
