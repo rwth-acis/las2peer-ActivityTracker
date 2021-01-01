@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mariadb:
+      mysql:
         image: mysql:latest
         ports:
           - 3306
@@ -24,12 +24,14 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: Verify MariaDB connection
+      - name: Verify MySQL connection
         env:
-          PORT: ${{ job.services.mariadb.ports[3306] }}
+          PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
           while ! mysqladmin ping -h"127.0.0.1" -P"$PORT" --silent; do
             sleep 1
           done
       - name: Build with Gradle
+        env:
+          ORG_GRADLE_PROJECT_db.port: ${{ job.services.mysql.ports[3306] }}
         run: ./gradlew clean build

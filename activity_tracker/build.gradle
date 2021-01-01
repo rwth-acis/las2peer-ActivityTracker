@@ -47,10 +47,10 @@ dependencies {
     // las2peer bundle which is not necessary in the runtime path
     // compileOnly will be moved into the lib dir afterwards
     compileOnly "i5:las2peer-bundle:${project.property('service.version')}"
-    compileOnly 'mysql:mysql-connector-java:8.0.22'
+    compileOnly "mysql:mysql-connector-java:${project.property('mysql.version')}"
 
     // This is for the jooq generation only
-    jooqGenerator 'mysql:mysql-connector-java:8.0.22'
+    jooqGenerator "mysql:mysql-connector-java:${project.property('mysql.version')}"
 
     // This dependency is used by the application.
     implementation "org.flywaydb:flyway-core:7.3.2"
@@ -59,9 +59,9 @@ dependencies {
     implementation 'com.h2database:h2:1.4.191'
     implementation 'org.apache.commons:commons-pool2:2.9.0'
     implementation 'org.apache.commons:commons-dbcp2:2.8.0'
-    implementation 'org.jooq:jooq:3.14.4'
-    implementation 'org.jooq:jooq-codegen:3.14.4'
-    implementation 'org.jooq:jooq-meta:3.14.4'
+    implementation "org.jooq:jooq:${project.property('jooq.version')}"
+    implementation "org.jooq:jooq-codegen:${project.property('jooq.version')}"
+    implementation "org.jooq:jooq-meta:${project.property('jooq.version')}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'commons-io:commons-io:2.8.0'
     implementation 'org.jodd:jodd-vtor:3.6.1'
@@ -104,16 +104,16 @@ build.dependsOn copyToLib
 
 // Flyway and jooq configuration for database management
 jooq {
-    version = '3.14.4'  // default (can be omitted)
+    version = "${project.property('jooq.version')}"
     configurations {
         main {  // name of the jOOQ configuration
             generationTool {
                 logging = org.jooq.meta.jaxb.Logging.WARN
                 jdbc {
                     driver = 'com.mysql.cj.jdbc.Driver'
-                    url = 'jdbc:mysql://localhost:3306/reqbaztrack'
-                    user = 'root'
-                    password = 'rootpw'
+                    url = "jdbc:mysql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
+                    user = "${project.property('db.user')}"
+                    password = "${project.property('db.password')}"
                 }
                 generator {
                     name = 'org.jooq.codegen.DefaultGenerator'
@@ -129,7 +129,7 @@ jooq {
                     }
                     target {
                         packageName = 'de.rwth.dbis.acis.activitytracker.service'
-                        directory = 'build/generated/jooq/main'  // default (can be omitted)
+                        directory = 'build/generated/jooq/main'
                     }
                     strategy.name = 'org.jooq.codegen.DefaultGeneratorStrategy'
                 }
@@ -139,13 +139,13 @@ jooq {
 }
 
 flyway {
-    url = 'jdbc:mysql://localhost:3306'
-    user = 'root'
-    password = 'rootpw'
+    url = "jdbc:mysql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
+    user = "${project.property('db.user')}"
+    password = "${project.property('db.password')}"
     schemas = ['reqbaztrack']
     // Flyway now uses 'flyway_schema_history' to retain compatibility override this
     table = 'schema_version'
-    locations = ["filesystem:$project.projectDir/src/main/resources/db/migration", "filesystem:$project.projectDir/../etc/migrations"]
+    locations = ["filesystem:$project.projectDir/../etc/migrations"]
 }
 
 test.dependsOn flywayClean
