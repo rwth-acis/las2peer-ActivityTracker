@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
-import de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.records.ActivityRecord;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
@@ -15,7 +15,7 @@ import org.jooq.impl.DSL;
 
 import java.util.*;
 
-import static de.rwth.dbis.acis.activitytracker.service.dal.jooq.tables.Activity.ACTIVITY;
+import static de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.Activity.ACTIVITY;
 import static org.jooq.impl.DSL.condition;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
@@ -23,7 +23,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
     @Override
     public ActivityRecord createRecord(Activity entity) {
         ActivityRecord activityRecord = new ActivityRecord();
-        activityRecord.setCreationDate(new java.sql.Timestamp(entity.getCreationDate().getTime()));
+        activityRecord.setCreationDate(entity.getCreationDate());
         activityRecord.setActivityAction(entity.getActivityAction());
         activityRecord.setOrigin(entity.getOrigin());
         activityRecord.setDataUrl(entity.getDataUrl());

@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jodd.vtor.constraint.MaxLength;
 import jodd.vtor.constraint.NotBlank;
 import jodd.vtor.constraint.NotNull;
+
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public class Activity extends EntityBase {
@@ -16,7 +18,7 @@ public class Activity extends EntityBase {
 
     @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-    private Date creationDate;
+    private LocalDateTime creationDate;
 
     @NotNull
     @NotBlank
@@ -87,7 +89,7 @@ public class Activity extends EntityBase {
         return id;
     }
 
-    public Date getCreationDate() {
+    public LocalDateTime getCreationDate() {
         return creationDate;
     }
 
@@ -146,7 +148,7 @@ public class Activity extends EntityBase {
     public static class Builder {
 
         private int id;
-        private Date creationDate;
+        private LocalDateTime creationDate;
         private String activityAction;
         private String origin;
         private String dataUrl;
@@ -182,7 +184,7 @@ public class Activity extends EntityBase {
             return this;
         }
 
-        public Builder creationDate(Date creationDate) {
+        public Builder creationDate(LocalDateTime creationDate) {
             this.creationDate = creationDate;
             return this;
         }

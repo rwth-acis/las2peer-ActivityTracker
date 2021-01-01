@@ -1,5 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import i5.las2peer.api.p2p.ServiceNameVersion;
 import i5.las2peer.connectors.webConnector.WebConnector;
 import i5.las2peer.connectors.webConnector.client.ClientResponse;
@@ -23,6 +25,7 @@ public class ActivityTrackerTest {
 
     private static final String testPass = "adamspass";
     private static final String mainPath = "activities/";
+    private static final String testVersion = "1.0.0";
     private static LocalNode node;
     private static WebConnector connector;
     private static ByteArrayOutputStream logStream;
@@ -48,7 +51,7 @@ public class ActivityTrackerTest {
 
         // start service
         // during testing, the specified service version does not matter
-        node.startService(new ServiceNameVersion(ActivityTrackerService.class.getName(), "0.8.1"), "a pass");
+        node.startService(new ServiceNameVersion(ActivityTrackerService.class.getName(), testVersion), "a pass");
 
         // start connector
         connector = new WebConnector(true, 0, false, 0); // port 0 means use system defined port
@@ -89,7 +92,27 @@ public class ActivityTrackerTest {
     }
 
     /**
-     * Test to get menus for some available canteens.
+     * Test to get the version from the version endpoint
+     */
+    @Test
+    public void testGetVersion() {
+        try {
+            MiniClient client = getClient();
+
+            ClientResponse result = client.sendRequest("GET", mainPath + "version", "");
+            JsonObject response = JsonParser.parseString(result.getResponse()).getAsJsonObject();
+
+            Assert.assertTrue(response.isJsonObject());
+            Assert.assertEquals(response.get("version").getAsString(), ActivityTrackerService.class.getName() + "@" + testVersion);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail(e.toString());
+        }
+    }
+
+    /**
+     * Test to get the activities stored in the mockdb.
      */
     @Test
     public void testGetActivities() {

@@ -22,8 +22,10 @@ public class DALFacadeImpl implements DALFacade {
         activityRepository = new ActivityRepositoryImpl(dslContext);
     }
 
+    @Override
     public void close() {
-        dslContext.close();
+        // No longer necessary, jooq claims gc will take care of it
+        // dslContext.close();
     }
 
 
