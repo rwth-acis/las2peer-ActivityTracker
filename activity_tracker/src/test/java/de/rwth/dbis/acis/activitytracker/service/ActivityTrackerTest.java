@@ -2,6 +2,7 @@ package de.rwth.dbis.acis.activitytracker.service;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javax.ws.rs.core.MediaType;
 import i5.las2peer.api.p2p.ServiceNameVersion;
 import i5.las2peer.connectors.webConnector.WebConnector;
 import i5.las2peer.connectors.webConnector.client.ClientResponse;
@@ -10,6 +11,7 @@ import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.LocalNodeManager;
 import i5.las2peer.security.UserAgentImpl;
 import i5.las2peer.testing.MockAgentFactory;
+import org.jooq.meta.derby.sys.Sys;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,6 +19,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
 
 /**
  * Example Test Class demonstrating a basic JUnit test structure.
@@ -112,7 +115,34 @@ public class ActivityTrackerTest {
     }
 
     /**
-     * Test to get the activities stored in the mockdb.
+     * Test to create a new activity
+     */
+    @Test
+    public void testCreateActivity() {
+        try {
+            MiniClient client = getClient();
+
+            //String testActivity = "{ \"id\": 8524, \"creationDate\": \"2021-01-05T16:30:34.000+0000\", \"activityAction\": \"UPDATE\", \"origin\": \"reqbaz\", \"dataUrl\": \"https://requirements-bazaar.org/bazaar/requirements/1234\", \"dataType\": \"REQUIREMENT\", \"dataFrontendUrl\": \"https://requirements-bazaar.org/projects/426/categories/1234/requirements/1234\", \"parentDataUrl\": \"https://requirements-bazaar.org/bazaar/categories/1234\", \"parentDataType\": \"CATEGORY\", \"userUrl\": \"https://requirements-bazaar.org/bazaar/users/1234\", \"additionalObject\": {  \"user\": {   \"id\": 1234  },  \"project\": {   \"id\": 1234,   \"name\": \"Project\"  },  \"category\": {   \"id\": 1234,   \"name\": \"Group\"  },  \"requirement\": {   \"id\": 1234,   \"name\": \"User Stories\"  } }, \"data\": {  \"id\": 1234,  \"name\": \"User Stories\",  \"description\": \"...\",  \"projectId\": 1234,  \"creator\": {   \"id\": 1234,   \"userName\": \"...\",   \"firstName\": \"...\",   \"lastName\": \"...\",   \"admin\": false,   \"las2peerId\": 1234,   \"profileImage\": \"https://api.learning-layers.eu/profile.png\",   \"emailLeadSubscription\": true,   \"emailFollowSubscription\": true  },  \"categories\": [   {    \"id\": 1234,    \"name\": \"Group\",    \"description\": \"Requirements for Group\",    \"projectId\": 1234   }  ],  \"creationDate\": \"2021-01-05T14:27:30.000+0000\",  \"lastUpdatedDate\": \"2021-01-05T16:30:34.000+0000\",  \"numberOfComments\": 0,  \"numberOfAttachments\": 0,  \"numberOfFollowers\": 2,  \"upVotes\": 0,  \"downVotes\": 0,  \"userVoted\": \"NO_VOTE\" }, \"parentData\": {  \"id\": 1234,  \"name\": \"Group\",  \"description\": \"Requirements for Group\",  \"projectId\": 1234,  \"leader\": {   \"id\": 1234,   \"userName\": \"...\",   \"firstName\": \"...\",   \"lastName\": \"...\",   \"admin\": false,   \"las2peerId\": 1234,   \"profileImage\": \"https://api.learning-layers.eu/profile.png\",   \"emailLeadSubscription\": true,   \"emailFollowSubscription\": true  },  \"creationDate\": \"2020-11-03T15:23:12.000+0000\",  \"lastUpdatedDate\": \"2021-01-05T14:18:31.000+0000\",  \"numberOfRequirements\": 5,  \"numberOfFollowers\": 2 }, \"user\": {  \"id\": 1234,  \"userName\": \"...\",  \"firstName\": \"...\",  \"lastName\": \"...\",  \"admin\": false,  \"las2peerId\": 1234,  \"profileImage\": \"https://api.learning-layers.eu/profile.png\",  \"emailLeadSubscription\": true,  \"emailFollowSubscription\": true,  \"creationDate\": \"2020-11-02T10:37:13.000+0000\",  \"lastLoginDate\": \"2021-01-05T16:34:35.000+0000\" }}";
+            String testActivity = "{ \"id\": 8524, \"creationDate\": \"2021-01-05T16:30:34.000\", \"activityAction\": \"UPDATE\", \"origin\": \"reqbaz\", \"dataUrl\": \"https://requirements-bazaar.org/bazaar/requirements/1234\", \"dataType\": \"REQUIREMENT\", \"dataFrontendUrl\": \"https://requirements-bazaar.org/projects/426/categories/1234/requirements/1234\", \"parentDataUrl\": \"https://requirements-bazaar.org/bazaar/categories/1234\", \"parentDataType\": \"CATEGORY\", \"userUrl\": \"https://requirements-bazaar.org/bazaar/users/1234\", \"additionalObject\": {  \"user\": {   \"id\": 1234  },  \"project\": {   \"id\": 1234,   \"name\": \"Project\"  },  \"category\": {   \"id\": 1234,   \"name\": \"Group\"  },  \"requirement\": {   \"id\": 1234,   \"name\": \"User Stories\"  } }, \"data\": {  \"id\": 1234,  \"name\": \"User Stories\",  \"description\": \"...\",  \"projectId\": 1234,  \"creator\": {   \"id\": 1234,   \"userName\": \"...\",   \"firstName\": \"...\",   \"lastName\": \"...\",   \"admin\": false,   \"las2peerId\": 1234,   \"profileImage\": \"https://api.learning-layers.eu/profile.png\",   \"emailLeadSubscription\": true,   \"emailFollowSubscription\": true  },  \"categories\": [   {    \"id\": 1234,    \"name\": \"Group\",    \"description\": \"Requirements for Group\",    \"projectId\": 1234   }  ],  \"creationDate\": \"2021-01-05T14:27:30.000+0000\",  \"lastUpdatedDate\": \"2021-01-05T16:30:34.000+0000\",  \"numberOfComments\": 0,  \"numberOfAttachments\": 0,  \"numberOfFollowers\": 2,  \"upVotes\": 0,  \"downVotes\": 0,  \"userVoted\": \"NO_VOTE\" }, \"parentData\": {  \"id\": 1234,  \"name\": \"Group\",  \"description\": \"Requirements for Group\",  \"projectId\": 1234,  \"leader\": {   \"id\": 1234,   \"userName\": \"...\",   \"firstName\": \"...\",   \"lastName\": \"...\",   \"admin\": false,   \"las2peerId\": 1234,   \"profileImage\": \"https://api.learning-layers.eu/profile.png\",   \"emailLeadSubscription\": true,   \"emailFollowSubscription\": true  },  \"creationDate\": \"2020-11-03T15:23:12.000+0000\",  \"lastUpdatedDate\": \"2021-01-05T14:18:31.000+0000\",  \"numberOfRequirements\": 5,  \"numberOfFollowers\": 2 }, \"user\": {  \"id\": 1234,  \"userName\": \"...\",  \"firstName\": \"...\",  \"lastName\": \"...\",  \"admin\": false,  \"las2peerId\": 1234,  \"profileImage\": \"https://api.learning-layers.eu/profile.png\",  \"emailLeadSubscription\": true,  \"emailFollowSubscription\": true,  \"creationDate\": \"2020-11-02T10:37:13.000+0000\",  \"lastLoginDate\": \"2021-01-05T16:34:35.000+0000\" }}";
+
+            // testInput is the pathParam
+            ClientResponse result = client.sendRequest("POST", mainPath, testActivity,
+                    MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON, new HashMap<>());
+            System.out.println("Result of 'testPost': " + result.getResponse().trim());
+            Assert.assertEquals(201, result.getHttpCode());
+            // "testInput" name is part of response
+            //JsonObject response = JsonParser.parseString(result.getResponse()).getAsJsonObject();
+
+            //Assert.assertTrue(response.isJsonObject());
+            //Assert.assertEquals(response.get("additionalObject").getAsJsonObject().get("testData"), ActivityTrackerService.class.getName() + "@" + testVersion);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail(e.toString());
+        }
+    }
+
+    /**
+     * Test to get the activities stored in the test db.
      */
     @Test
     public void testGetActivities() {

@@ -1,6 +1,8 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
@@ -9,13 +11,13 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerExcept
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
-import de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.dal.jooq.tables.records.ActivityRecord;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import java.util.*;
 
-import static de.rwth.dbis.acis.activitytracker.service.reqbaztrack.tables.Activity.ACTIVITY;
+import static de.rwth.dbis.acis.activitytracker.dal.jooq.tables.Activity.ACTIVITY;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
 
@@ -32,7 +34,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
         activityRecord.setPublic((byte) (entity.isPublicActivity() ? 1 : 0));
-        activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? null : entity.getAdditionalObject().toString());
+        activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? "" : entity.getAdditionalObject().toString());
         return activityRecord;
     }
 
@@ -43,7 +45,9 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         try {
             if (record.getAdditionalObject() != null) {
                 ObjectMapper mapper = new ObjectMapper();
-                actualObj = mapper.readTree(record.getAdditionalObject());
+                JsonFactory factory = mapper.getFactory();
+                JsonParser parser = factory.createParser((String) record.getAdditionalObject());
+                actualObj = mapper.readTree(parser);
             }
         } catch (Exception e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);

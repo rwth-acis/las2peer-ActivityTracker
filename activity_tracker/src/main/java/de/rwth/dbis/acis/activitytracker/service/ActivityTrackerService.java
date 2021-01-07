@@ -127,7 +127,7 @@ public class ActivityTrackerService extends RESTService {
         try {
             dalFacade = this.getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
-            if (!mqttBroker.isEmpty()) {
+            if (mqttBroker != null && !mqttBroker.isEmpty()) {
                 this.publishMQTT(createdActivity);
             }
             return createdActivity;

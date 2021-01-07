@@ -51,8 +51,9 @@ dependencies {
 
     // This is for the jooq generation only
     jooqGenerator "mysql:mysql-connector-java:${project.property('mysql.version')}"
+    jooqGenerator "org.jooq:jooq-codegen:${project.property('jooq.version')}"
 
-    // This dependency is used by the application.
+    // These dependencies are used by the application.
     implementation "org.flywaydb:flyway-core:7.3.2"
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
     implementation 'org.slf4j:slf4j-nop:1.7.25'
@@ -60,12 +61,15 @@ dependencies {
     implementation 'org.apache.commons:commons-pool2:2.9.0'
     implementation 'org.apache.commons:commons-dbcp2:2.8.0'
     implementation "org.jooq:jooq:${project.property('jooq.version')}"
-    implementation "org.jooq:jooq-codegen:${project.property('jooq.version')}"
     implementation "org.jooq:jooq-meta:${project.property('jooq.version')}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'commons-io:commons-io:2.8.0'
     implementation 'org.jodd:jodd-vtor:3.6.1'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.0'
+
+    // This clashes with jackson being provided and used by las2peer core
+    // (more specifically glassfish jersey), so these versions are tied to each
+    // other and may cause issues on las2peer upgrades.
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.9'
 }
 
 configurations {
@@ -120,16 +124,17 @@ jooq {
                     name = 'org.jooq.codegen.DefaultGenerator'
                     database {
                         name = 'org.jooq.meta.mysql.MySQLDatabase'
-                        //inputSchema = 'public'
+                        inputSchema = "${project.property('db.name')}"
                     }
                     generate {
                         deprecated = false
                         records = true
-                        immutablePojos = true
+                        immutablePojos = false
                         fluentSetters = true
+                        javaTimeTypes = true
                     }
                     target {
-                        packageName = 'de.rwth.dbis.acis.activitytracker.service'
+                        packageName = 'de.rwth.dbis.acis.activitytracker.dal.jooq'
                         directory = 'build/generated/jooq/main'
                     }
                     strategy.name = 'org.jooq.codegen.DefaultGeneratorStrategy'
@@ -149,5 +154,4 @@ flyway {
     locations = ["filesystem:$project.projectDir/../etc/migrations"]
 }
 
-test.dependsOn flywayClean
 generateJooq.dependsOn flywayMigrate
