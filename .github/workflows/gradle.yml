@@ -30,6 +30,10 @@ jobs:
           while ! mysqladmin ping -h"127.0.0.1" -P"$PORT" --silent; do
             sleep 1
           done
+      - name: Set DB Port in config
+        env:
+          PORT: ${{ job.services.mysql.ports[3306] }}
+        run: sed -i "s/3306/$PORT/g" activity_tracker/etc/de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService.properties && cat activity_tracker/etc/de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService.properties
       - name: Build with Gradle
         env:
           PORT: ${{ job.services.mysql.ports[3306] }}
