@@ -1,5 +1,6 @@
 package de.rwth.dbis.acis.activitytracker.service;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import javax.ws.rs.core.MediaType;
@@ -130,11 +131,6 @@ public class ActivityTrackerTest {
                     MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON, new HashMap<>());
             System.out.println("Result of 'testPost': " + result.getResponse().trim());
             Assert.assertEquals(201, result.getHttpCode());
-            // "testInput" name is part of response
-            //JsonObject response = JsonParser.parseString(result.getResponse()).getAsJsonObject();
-
-            //Assert.assertTrue(response.isJsonObject());
-            //Assert.assertEquals(response.get("additionalObject").getAsJsonObject().get("testData"), ActivityTrackerService.class.getName() + "@" + testVersion);
         } catch (Exception e) {
             e.printStackTrace();
             Assert.fail(e.toString());
@@ -151,6 +147,10 @@ public class ActivityTrackerTest {
 
             ClientResponse result = client.sendRequest("GET", mainPath, "");
             System.out.println(result.toString());
+
+            Assert.assertEquals(200, result.getHttpCode());
+            JsonElement response = JsonParser.parseString(result.getResponse());
+            Assert.assertTrue(response.isJsonArray());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.fail(e.toString());
