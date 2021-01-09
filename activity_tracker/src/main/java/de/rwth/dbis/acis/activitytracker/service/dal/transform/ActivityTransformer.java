@@ -12,6 +12,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import de.rwth.dbis.acis.activitytracker.dal.jooq.tables.records.ActivityRecord;
+import static org.jooq.JSON.json;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
@@ -34,7 +35,9 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
         activityRecord.setPublic((byte) (entity.isPublicActivity() ? 1 : 0));
-        activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? "" : entity.getAdditionalObject().toString());
+
+        // TODO: Reconsider parsing between jackson and jooq. Maybe involve SO
+        activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? null : json(entity.getAdditionalObject().toString()));
         return activityRecord;
     }
 
@@ -45,9 +48,8 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         try {
             if (record.getAdditionalObject() != null) {
                 ObjectMapper mapper = new ObjectMapper();
-                JsonFactory factory = mapper.getFactory();
-                JsonParser parser = factory.createParser((String) record.getAdditionalObject());
-                actualObj = mapper.readTree(parser);
+                // TODO: When fixing the above todo-comment, consider this as well.
+                actualObj = mapper.readTree(record.getAdditionalObject().toString());
             }
         } catch (Exception e) {
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);
