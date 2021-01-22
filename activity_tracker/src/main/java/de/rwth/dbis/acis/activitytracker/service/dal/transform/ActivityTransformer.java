@@ -11,14 +11,14 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerExcept
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
-import de.rwth.dbis.acis.activitytracker.dal.jooq.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.records.ActivityRecord;
 import static org.jooq.JSON.json;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import java.util.*;
 
-import static de.rwth.dbis.acis.activitytracker.dal.jooq.tables.Activity.ACTIVITY;
+import static de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.Activity.ACTIVITY;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
 
@@ -34,7 +34,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         activityRecord.setParentDataUrl(entity.getParentDataUrl());
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
-        activityRecord.setPublic((byte) (entity.isPublicActivity() ? 1 : 0));
+        activityRecord.setPublic(entity.isPublicActivity());
 
         // TODO: Reconsider parsing between jackson and jooq. Maybe involve SO
         activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? null : json(entity.getAdditionalObject().toString()));
@@ -66,7 +66,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 .parentDataUrl(record.getParentDataUrl())
                 .parentDataType(record.getParentDataType())
                 .userUrl(record.getUserUrl())
-                .publicActivity(record.getPublic() == 1)
+                .publicActivity(record.getPublic())
                 .additionalObject(actualObj)
                 .build();
     }

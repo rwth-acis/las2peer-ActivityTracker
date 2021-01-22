@@ -51,6 +51,8 @@ dependencies {
     // This is for the jooq generation only
     jooqGenerator "mysql:mysql-connector-java:${project.property('mysql.version')}"
     jooqGenerator "org.jooq:jooq-codegen:${project.property('jooq.version')}"
+    jooqGenerator "org.jooq:jooq-meta-extensions:${project.property('jooq.version')}"
+
 
     // These dependencies are used by the application.
     implementation "org.flywaydb:flyway-core:7.3.2"
@@ -113,17 +115,63 @@ jooq {
         main {  // name of the jOOQ configuration
             generationTool {
                 logging = org.jooq.meta.jaxb.Logging.WARN
-                jdbc {
-                    driver = 'com.mysql.cj.jdbc.Driver'
-                    url = "jdbc:mysql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
-                    user = "${project.property('db.user')}"
-                    password = "${project.property('db.password')}"
-                }
+                //jdbc {
+                //    driver = 'com.mysql.cj.jdbc.Driver'
+                //    url = "jdbc:mysql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
+                //    user = "${project.property('db.user')}"
+                //    password = "${project.property('db.password')}"
+                //}
                 generator {
                     name = 'org.jooq.codegen.DefaultGenerator'
                     database {
-                        name = 'org.jooq.meta.mysql.MySQLDatabase'
-                        inputSchema = "${project.property('db.name')}"
+                        name = 'org.jooq.meta.extensions.ddl.DDLDatabase'
+                        //inputSchema = "${project.property('db.name')}"
+                        properties {
+
+                            // Specify the location of your SQL script.
+                            // You may use ant-style file matching, e.g. /path/**/to/*.sql
+                            //
+                            // Where:
+                            // - ** matches any directory subtree
+                            // - * matches any number of characters in a directory / file name
+                            // - ? matches a single character in a directory / file name
+                            property {
+                                key = 'scripts'
+                                value = 'src/main/resources/migrations/*.sql'
+                            }
+
+                            // The sort order of the scripts within a directory, where:
+                            //
+                            // - semantic: sorts versions, e.g. v-3.10.0 is after v-3.9.0 (default)
+                            // - alphanumeric: sorts strings, e.g. v-3.10.0 is before v-3.9.0
+                            // - flyway: sorts files the same way as flyway does
+                            // - none: doesn't sort directory contents after fetching them from the directory
+                            property {
+                                key = 'sort'
+                                value = 'flyway'
+                            }
+
+                            // The default schema for unqualified objects:
+                            //
+                            // - public: all unqualified objects are located in the PUBLIC (upper case) schema
+                            // - none: all unqualified objects are located in the default schema (default)
+                            //
+                            // This configuration can be overridden with the schema mapping feature
+                            property {
+                                key = 'unqualifiedSchema'
+                                value = 'public'
+                            }
+
+                            // The default name case for unquoted objects:
+                            //
+                            // - as_is: unquoted object names are kept unquoted
+                            // - upper: unquoted object names are turned into upper case (most databases)
+                            // - lower: unquoted object names are turned into lower case (e.g. PostgreSQL)
+                            property {
+                                key = 'defaultNameCase'
+                                value = 'lower'
+                            }
+                        }
                     }
                     generate {
                         deprecated = false
@@ -150,7 +198,7 @@ flyway {
     schemas = ['reqbaztrack']
     // Flyway now uses 'flyway_schema_history' to retain compatibility override this
     table = 'schema_version'
-    locations = ["filesystem:$project.projectDir/../etc/migrations"]
+    locations = ["filesystem:$project.projectDir/src/main/resources/migrations"]
 }
 
-generateJooq.dependsOn flywayMigrate
+test.dependsOn flywayMigrate
