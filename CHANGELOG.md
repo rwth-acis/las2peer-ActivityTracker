@@ -8,9 +8,15 @@ Releases prior to v0.6.0 are only documented on the [GitHub Release Page](https:
 
 ## [Unreleased]
 
-### Changed
+### Added
+- Added new testcases [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
 
-- Updated dependencies, most notably las2peer to 1.0.0 [#41](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/41)
+
+### Changed
+- Updated dependencies (las2peer 1.1.0 and thereby requiring Java 14) [#41](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/41), [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
+- Changed buildsystem to gradle [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
+- Automatically generate jooq code from migration files at build time [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
+- Move to multi-staged docker build for slimmer target image [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
 
 ## [0.6.0] - 2019-02-19
 
