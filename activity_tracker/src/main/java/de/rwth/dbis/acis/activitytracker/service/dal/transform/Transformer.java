@@ -2,8 +2,8 @@ package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
-import org.jooq.*;
 import org.jooq.Record;
+import org.jooq.*;
 
 import java.util.Collection;
 import java.util.List;

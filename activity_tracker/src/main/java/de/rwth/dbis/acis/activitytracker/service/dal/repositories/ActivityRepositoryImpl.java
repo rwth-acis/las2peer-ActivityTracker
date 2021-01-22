@@ -1,7 +1,7 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.repositories;
 
-import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.transform.ActivityTransformer;
 import org.jooq.DSLContext;
 

@@ -1,24 +1,22 @@
 package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.records.ActivityRecord;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
-import de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.records.ActivityRecord;
-import static org.jooq.JSON.json;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import java.util.*;
 
 import static de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.Activity.ACTIVITY;
+import static org.jooq.JSON.json;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
 
