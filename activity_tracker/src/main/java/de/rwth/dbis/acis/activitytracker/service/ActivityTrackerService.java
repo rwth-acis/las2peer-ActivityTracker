@@ -23,7 +23,6 @@ import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
-import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -36,6 +35,10 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
@@ -43,10 +46,7 @@ import javax.ws.rs.core.Response;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -72,11 +72,14 @@ public class ActivityTrackerService extends RESTService {
     protected String mqttOrganization;
     private final int MQTT_VERSION = 1;
     private DataSource dataSource;
+    private ValidatorFactory validatorFactory;
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
         Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
+
+        validatorFactory = Validation.buildDefaultValidatorFactory();
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
@@ -117,10 +120,10 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        Vtor vtor = new Vtor();
-        vtor.validate(activity);
-        if (vtor.hasViolations()) {
-            ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
+        Validator validator = validatorFactory.getValidator();
+        Set<ConstraintViolation<Activity>> violations = validator.validate(activity);
+        if (!violations.isEmpty()) {
+            ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, violations.toString());
         }
 
         DALFacade dalFacade = null;

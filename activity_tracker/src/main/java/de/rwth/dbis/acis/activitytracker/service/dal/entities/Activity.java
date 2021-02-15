@@ -5,13 +5,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
-import jodd.vtor.constraint.MaxLength;
-import jodd.vtor.constraint.NotBlank;
-import jodd.vtor.constraint.NotNull;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public class Activity extends EntityBase {
@@ -20,36 +16,32 @@ public class Activity extends EntityBase {
 
     @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime creationDate;
 
     @NotNull
-    @NotBlank
-    @MaxLength(value= 255)
+    @Size(min = 1, max = 255)
     private String activityAction;
 
     @NotNull
-    @NotBlank
-    @MaxLength(value= 255)
+    @Size(min = 1, max = 255)
     private String origin;
 
-    @MaxLength(value= 255)
+    @Size(max = 255)
     private String dataUrl;
 
-    @MaxLength(value= 255)
+    @Size(max = 255)
     private String dataType;
 
-    @MaxLength(value= 255)
+    @Size(max = 255)
     private String dataFrontendUrl;
 
-    @MaxLength(value= 255)
+    @Size(max = 255)
     private String parentDataUrl;
 
-    @MaxLength(value= 255)
+    @Size(max = 255)
     private String parentDataType;
 
-    @MaxLength(value= 255)
+    @Size(max = 255)
     private String userUrl;
 
     @JsonIgnore
