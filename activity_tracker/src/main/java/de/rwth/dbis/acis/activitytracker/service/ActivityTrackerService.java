@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacade;
 import de.rwth.dbis.acis.activitytracker.service.dal.DALFacadeImpl;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
@@ -23,7 +24,6 @@ import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import io.swagger.annotations.*;
-import jodd.vtor.Vtor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -36,6 +36,10 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
@@ -43,10 +47,7 @@ import javax.ws.rs.core.Response;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -72,11 +73,14 @@ public class ActivityTrackerService extends RESTService {
     protected String mqttOrganization;
     private final int MQTT_VERSION = 1;
     private DataSource dataSource;
+    private ValidatorFactory validatorFactory;
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
         Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
+
+        validatorFactory = Validation.buildDefaultValidatorFactory();
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
@@ -105,6 +109,7 @@ public class ActivityTrackerService extends RESTService {
     public String createActivity(String activity) {
         try {
             ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             mapper.readValue(activity, Activity.class);
             Activity activityToCreate = mapper.readValue(activity, Activity.class);
@@ -117,10 +122,10 @@ public class ActivityTrackerService extends RESTService {
     }
 
     private Activity storeActivity(Activity activity) throws ActivityTrackerException {
-        Vtor vtor = new Vtor();
-        vtor.validate(activity);
-        if (vtor.hasViolations()) {
-            ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, vtor.getViolations().toString());
+        Validator validator = validatorFactory.getValidator();
+        Set<ConstraintViolation<Activity>> violations = validator.validate(activity);
+        if (!violations.isEmpty()) {
+            ExceptionHandler.getInstance().throwException(ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.VALIDATION, violations.toString());
         }
 
         DALFacade dalFacade = null;
@@ -142,6 +147,7 @@ public class ActivityTrackerService extends RESTService {
                                            List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
         List<Activity> activitiesWithObjectBodies = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
 
         for (Activity activity : activities) {
             Activity.Builder builder = Activity.getBuilder().activity(activity);
@@ -220,6 +226,7 @@ public class ActivityTrackerService extends RESTService {
     private boolean isVisible(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
                               Activity activity, Map<String, Object> tempObjectStorage) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         try {
             if (tempObjectStorage.containsKey(activity.getDataUrl())) {
                 return true;
@@ -290,6 +297,7 @@ public class ActivityTrackerService extends RESTService {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            mapper.registerModule(new JavaTimeModule());
             MqttConnectOptions options = new MqttConnectOptions();
             if (!mqttUserName.isEmpty()) {
                 options.setUserName(mqttUserName);
@@ -370,11 +378,6 @@ public class ActivityTrackerService extends RESTService {
                         + "Syntax: activityAction-dataType[-parentDataType] ; use * as wildcard"+
                         "Example: a-b => activityAction == a && dataType ==b; a-*-c => activityAction==a && parentDataType == c"
                         , required = false, allowMultiple = true) @QueryParam("combinedFilter") List<String> combinedFilter,
-                @ApiParam(value = "MySQL extract query on additionalObject json field. " +
-                        "Syntax:\"$.a.b\" to test object b inside object a. \"$[1][2]\" to test second array element inside first array. \"$.a[2].b\" to test object b inside second array element inside object a." +
-                        "Operators: =, !=, <, >, IS NULL, IS NOT NULL " +
-                        "Example: \"$.project.id\"=3"
-                        , required = false) @QueryParam("additionalObject") String additionalObject,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) throws ActivityTrackerException {
 
             DALFacade dalFacade = null;
@@ -412,11 +415,6 @@ public class ActivityTrackerService extends RESTService {
                 }
                 if (!combinedFilter.isEmpty()) {
                     filters.put("combinedFilter", combinedFilter);
-                }
-                if (additionalObject != null) {
-                    filters.put("additionalObject", new ArrayList() {{
-                        add(additionalObject);
-                    }});
                 }
 
                 dalFacade = service.getDBConnection();
@@ -490,11 +488,6 @@ public class ActivityTrackerService extends RESTService {
                 }
                 if (!combinedFilter.isEmpty()) {
                     parameter.put("combinedFilter", combinedFilter);
-                }
-                if (additionalObject != null) {
-                    parameter.put("additionalObject", new ArrayList() {{
-                        add(additionalObject);
-                    }});
                 }
 
 

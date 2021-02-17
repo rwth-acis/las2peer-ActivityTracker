@@ -47,6 +47,9 @@ dependencies {
     // compileOnly will be moved into the lib dir afterwards
     compileOnly "i5:las2peer-bundle:${project.property('core.version')}"
     compileOnly "mysql:mysql-connector-java:${project.property('mysql.version')}"
+    compileOnly 'org.hibernate:hibernate-validator:5.4.3.Final'
+    compileOnly 'org.glassfish:jakarta.el:3.0.3'
+    compileOnly 'javax.validation:validation-api:1.1.0.Final'
 
     // This is for the jooq generation only
     jooqGenerator "mysql:mysql-connector-java:${project.property('mysql.version')}"
@@ -65,7 +68,6 @@ dependencies {
     implementation "org.jooq:jooq-meta:${project.property('jooq.version')}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'commons-io:commons-io:2.8.0'
-    implementation 'org.jodd:jodd-vtor:5.3.0'
 
     // This clashes with jackson being provided and used by las2peer core
     // (more specifically glassfish jersey), so these versions are tied to each

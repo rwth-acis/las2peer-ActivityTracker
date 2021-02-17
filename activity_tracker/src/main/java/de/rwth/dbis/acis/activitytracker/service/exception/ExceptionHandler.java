@@ -3,6 +3,7 @@ package de.rwth.dbis.acis.activitytracker.service.exception;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public enum ExceptionHandler {
     INSTANCE;
@@ -40,6 +41,7 @@ public enum ExceptionHandler {
 
     public String toJSON(ActivityTrackerException exception) throws ActivityTrackerException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String jsonInString = null;
         try {

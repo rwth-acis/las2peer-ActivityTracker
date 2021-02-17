@@ -3,6 +3,7 @@ package de.rwth.dbis.acis.activitytracker.service.dal.entities;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
@@ -12,7 +13,9 @@ public abstract class EntityBase implements IdentifiedById {
 
     public String toJSON() throws ActivityTrackerException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         String jsonInString = null;
         try {
             jsonInString = mapper.writeValueAsString(this);

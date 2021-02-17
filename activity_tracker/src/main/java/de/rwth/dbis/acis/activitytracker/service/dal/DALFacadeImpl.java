@@ -31,8 +31,7 @@ public class DALFacadeImpl implements DALFacade {
 
     @Override
     public PaginationResult<Activity> findActivities(Pageable pageable) throws ActivityTrackerException {
-        PaginationResult<Activity> activities = activityRepository.findAll(pageable);
-        return activities;
+        return activityRepository.findAll(pageable);
     }
 
     @Override
