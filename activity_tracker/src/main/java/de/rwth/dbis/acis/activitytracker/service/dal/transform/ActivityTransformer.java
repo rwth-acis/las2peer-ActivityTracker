@@ -3,6 +3,7 @@ package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.records.ActivityRecord;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
@@ -46,6 +47,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         try {
             if (record.getAdditionalObject() != null) {
                 ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
                 // TODO: When fixing the above todo-comment, consider this as well.
                 actualObj = mapper.readTree(record.getAdditionalObject().toString());
             }
@@ -135,12 +137,6 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
             }
             if (filterEntry.getKey().equals("userUrl")) {
                 conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.USER_URL));
-            }
-            if (filterEntry.getKey().equals("additionalObject")) {
-                for (String filter : filterEntry.getValue()) {
-                    // TODO: Check for SQL injection!
-                    conditions.add(DSL.condition("additional_object -> " + filter));
-                }
             }
             if (filterEntry.getKey().equals("combinedFilter")) {
                 Condition orConcat = DSL.falseCondition();

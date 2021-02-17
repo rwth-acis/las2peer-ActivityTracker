@@ -13,9 +13,9 @@ public abstract class EntityBase implements IdentifiedById {
 
     public String toJSON() throws ActivityTrackerException {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.registerModule(new JavaTimeModule());
-        
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         String jsonInString = null;
         try {
             jsonInString = mapper.writeValueAsString(this);
