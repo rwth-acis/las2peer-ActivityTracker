@@ -27,6 +27,8 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
+          body: |
+            This is a pre-release. For changes please check the [Changelog](https://github.com/rwth-acis/las2peer-ActivityTracker/blob/develop/CHANGELOG.md)
           draft: false
           prerelease: true
       - name: Upload Release Asset
@@ -37,5 +39,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./activity_tracker/build/dist/ActivityTracker.zip
-          asset_name: ActivityTracker-${{ github.ref }}.zip
+          asset_name: ActivityTracker-${{ github.event.release.tag_name }}.zip
           asset_content_type: application/zip
