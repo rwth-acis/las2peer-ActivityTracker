@@ -7,13 +7,21 @@ if [[ ! -z "${DEBUG}" ]]; then
     set -x
 fi
 
+function getProperty {
+   PROP_KEY=$1
+   PROP_VALUE=`cat $PROPERTY_FILE | grep "$PROP_KEY" | cut -d'=' -f2`
+   echo $PROP_VALUE
+}
+
 # set some helpful variables
 export SERVICE_PROPERTY_FILE='etc/de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService.properties'
 export WEB_CONNECTOR_PROPERTY_FILE='etc/i5.las2peer.connectors.webConnector.WebConnector.properties'
-export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' etc/ant_configuration/service.properties)
-export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' etc/ant_configuration/service.properties)
-export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' etc/ant_configuration/service.properties)
+
+export SERVICE_VERSION=$( getProperty "service.version")
+export SERVICE_NAME=$( getProperty "service.name")
+export SERVICE_CLASS=$( getProperty "service.class")
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
+
 export DEMO_DATA_SQL='etc/migrations/add_activitytracker_demo_data.sql'
 export MYSQL_DATABASE='reqbaztrack'
 
@@ -80,9 +88,6 @@ while ! mysqladmin ping -h${MYSQL_HOST} -P${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQ
     sleep 1
 done
 echo "${MYSQL_HOST}:${MYSQL_PORT} is available. Continuing..."
-
-# run migrations (does nothing if already migrated)
-ant migrate-db
 
 if [[ ! -z "${INSERT_DEMO_DATA}" ]]; then
     echo "Inserting demo data into the database..."
