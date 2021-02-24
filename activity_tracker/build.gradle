@@ -89,14 +89,13 @@ configurations {
 
 jar {
     manifest {
-        attributes "Main-Class": "de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService"
-        attributes "Library-Version": "${project.property('core.version')}"
+        attributes "Main-Class": "${project.property('service.name')}.${project.property('service.class')}"
+        attributes "Library-Version": "${project.property('service.version')}"
         attributes "Library-SymbolicName": "${project.property('service.name')}"
-        // attribute "Import-Library": "${service.dependencies}"
     }
 
     from { (configurations.runtimeClasspath).collect { it.isDirectory() ? it : zipTree(it) } } {
-        // Exclude signatures to be able to natively bundle mqtt
+        // Exclude signatures to be able to natively bundle signed jars
         exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
     }
 }
@@ -273,7 +272,6 @@ task packageDistribution(type: Zip, dependsOn: export) {
 clean.doLast {
     file("$rootDir/lib").deleteDir()
     file("$rootDir/service").deleteDir()
-    file("$buildDir/export").deleteDir()
 }
 
 task cleanAll {
