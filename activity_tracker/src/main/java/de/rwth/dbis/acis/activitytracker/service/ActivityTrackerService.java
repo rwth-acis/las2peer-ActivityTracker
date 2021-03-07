@@ -150,7 +150,7 @@ public class ActivityTrackerService extends RESTService {
         mapper.registerModule(new JavaTimeModule());
 
         for (Activity activity : activities) {
-            Activity.Builder builder = Activity.getBuilder().activity(activity);
+            Activity.Builder builder = activity.toBuilder();
 
             try {
                 if (activity.getDataUrl() != null && !activity.getDataUrl().isEmpty()) {
@@ -341,8 +341,9 @@ public class ActivityTrackerService extends RESTService {
                             name = "Apache2",
                             url = "http://requirements-bazaar.org/license"
                     )
-            ))
-
+            ),
+            schemes = SwaggerDefinition.Scheme.HTTPS
+    )
     @Path("/")
     public static class Resource {
 
@@ -357,7 +358,7 @@ public class ActivityTrackerService extends RESTService {
         @ApiOperation(value = "This method returns a list of activities",
                 notes = "Default the latest ten activities will be returned")
         @ApiResponses(value = {
-                @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities"),
+                @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Returns a list of activities", response = Activity.class, responseContainer = "List"),
                 @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Not found"),
                 @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
         })
@@ -518,7 +519,7 @@ public class ActivityTrackerService extends RESTService {
                 "To create a private activity please set the 'publicActivity' to false.",
                 notes = "Returns the created activity")
         @ApiResponses(value = {
-                @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created"),
+                @ApiResponse(code = HttpURLConnection.HTTP_CREATED, message = "Activity created", response = Activity.class),
                 @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server problems")
         })
         public Response createActivity(@ApiParam(value = "Activity" +
