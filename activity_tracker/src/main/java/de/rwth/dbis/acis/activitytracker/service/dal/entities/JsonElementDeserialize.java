@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 
@@ -20,7 +21,7 @@ public class JsonElementDeserialize extends JsonDeserializer<JsonNode> {
     @Override
     public JsonNode deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode actualObj = mapper.readTree(jsonParser);
-        return actualObj;
+        mapper.registerModule(new JavaTimeModule());
+        return mapper.readTree(jsonParser);
     }
 }

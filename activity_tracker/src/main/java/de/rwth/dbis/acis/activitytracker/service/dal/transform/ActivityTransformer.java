@@ -55,7 +55,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
             ExceptionHandler.getInstance().convertAndThrowException(e, ExceptionLocation.DALFACADE, ErrorCode.SERILIZATION_PROBLEM);
         }
 
-        return Activity.getBuilder()
+        return Activity.builder()
                 .id(record.getId())
                 .creationDate(record.getCreationDate())
                 .activityAction(record.getActivityAction())

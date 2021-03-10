@@ -10,7 +10,7 @@ Releases prior to v0.6.0 are only documented on the [GitHub Release Page](https:
 
 ### Added
 - Added new testcases [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
-
+- Add returned data models to swagger annotations [#46](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/46)
 
 ### Changed
 - Updated dependencies (las2peer 1.1.0 and thereby requiring Java 14) [#41](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/41), [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
@@ -18,6 +18,8 @@ Releases prior to v0.6.0 are only documented on the [GitHub Release Page](https:
 - Automatically generate jooq code from migration files at build time [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
 - Move to multi-staged docker build for slimmer target image [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
 - Replaced vtor with Java Bean Validation [#44](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/44)
+- Remove static code from data classes and generate getter/setters and builder with
+  lombok. [#46](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/46)
 
 ### Removed
 

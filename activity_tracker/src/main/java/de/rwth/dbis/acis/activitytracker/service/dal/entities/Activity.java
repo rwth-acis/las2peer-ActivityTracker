@@ -5,11 +5,19 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Jacksonized
+@Builder(builderClassName = "Builder", toBuilder = true)
 public class Activity extends EntityBase {
 
     private int id;
@@ -45,6 +53,7 @@ public class Activity extends EntityBase {
     private String userUrl;
 
     @JsonIgnore
+    @lombok.Builder.Default
     private boolean publicActivity = true;
 
     @JsonDeserialize(using = JsonElementDeserialize.class)
@@ -55,203 +64,4 @@ public class Activity extends EntityBase {
     private Object parentData;
 
     private Object user;
-
-    public Activity() {
-    }
-
-    protected Activity(Builder builder) {
-        this.id = builder.id;
-        this.creationDate = builder.creationDate;
-        this.activityAction = builder.activityAction;
-        this.origin = builder.origin;
-        this.dataUrl = builder.dataUrl;
-        this.dataType = builder.dataType;
-        this.dataFrontendUrl = builder.dataFrontendUrl;
-        this.parentDataUrl = builder.parentDataUrl;
-        this.parentDataType = builder.parentDataType;
-        this.additionalObject = builder.additionalObject;
-        this.userUrl = builder.userUrl;
-        this.publicActivity = builder.publicActivity;
-        this.data = builder.data;
-        this.parentData = builder.parentData;
-        this.user = builder.user;
-    }
-
-    public static Builder getBuilder() {
-        return new Builder();
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public LocalDateTime getCreationDate() {
-        return creationDate;
-    }
-
-    public String getActivityAction() {
-        return activityAction;
-    }
-
-    public String getOrigin() {
-        return origin;
-    }
-
-    public String getDataUrl() {
-        return dataUrl;
-    }
-
-    public String getDataType() {
-        return dataType;
-    }
-
-    public String getDataFrontendUrl() {
-        return dataFrontendUrl;
-    }
-
-    public String getParentDataUrl() {
-        return parentDataUrl;
-    }
-
-    public String getParentDataType() {
-        return parentDataType;
-    }
-
-    public String getUserUrl() {
-        return userUrl;
-    }
-
-    public Boolean isPublicActivity() {
-        return publicActivity;
-    }
-
-    public JsonNode getAdditionalObject() {
-        return additionalObject;
-    }
-
-    public Object getData() {
-        return data;
-    }
-
-    public Object getParentData() {
-        return parentData;
-    }
-
-    public Object getUser() {
-        return user;
-    }
-
-    public static class Builder {
-
-        private int id;
-        private LocalDateTime creationDate;
-        private String activityAction;
-        private String origin;
-        private String dataUrl;
-        private String dataType;
-        private String dataFrontendUrl;
-        private String parentDataUrl;
-        private String parentDataType;
-        private String userUrl;
-        private Boolean publicActivity;
-        private JsonNode additionalObject;
-        private Object data;
-        private Object parentData;
-        private Object user;
-
-        public Builder activity(Activity activity) {
-            id(activity.getId());
-            creationDate(activity.getCreationDate());
-            activityAction(activity.getActivityAction());
-            origin(activity.getOrigin());
-            dataUrl(activity.getDataUrl());
-            dataType(activity.getDataType());
-            dataFrontendUrl(activity.getDataFrontendUrl());
-            parentDataUrl(activity.getParentDataUrl());
-            parentDataType(activity.getParentDataType());
-            userUrl(activity.getUserUrl());
-            publicActivity(activity.isPublicActivity());
-            additionalObject(activity.getAdditionalObject());
-            return this;
-        }
-
-        public Builder id(int id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder creationDate(LocalDateTime creationDate) {
-            this.creationDate = creationDate;
-            return this;
-        }
-
-        public Builder activityAction(String activityAction) {
-            this.activityAction = activityAction;
-            return this;
-        }
-
-        public Builder origin(String origin) {
-            this.origin = origin;
-            return this;
-        }
-
-        public Builder dataUrl(String dataUrl) {
-            this.dataUrl = dataUrl;
-            return this;
-        }
-
-        public Builder dataType(String dataType) {
-            this.dataType = dataType;
-            return this;
-        }
-
-        public Builder dataFrontendUrl(String dataFrontendUrl) {
-            this.dataFrontendUrl = dataFrontendUrl;
-            return this;
-        }
-
-        public Builder parentDataUrl(String parentDataUrl) {
-            this.parentDataUrl = parentDataUrl;
-            return this;
-        }
-
-        public Builder parentDataType(String parentDataType) {
-            this.parentDataType = parentDataType;
-            return this;
-        }
-
-        public Builder userUrl(String userUrl) {
-            this.userUrl = userUrl;
-            return this;
-        }
-
-        public Builder publicActivity(Boolean publicActivity) {
-            this.publicActivity = publicActivity;
-            return this;
-        }
-
-        public Builder additionalObject(JsonNode additionalObject) {
-            this.additionalObject = additionalObject;
-            return this;
-        }
-
-        public Activity.Builder data(Object data) {
-            this.data = data;
-            return this;
-        }
-
-        public Activity.Builder parentData(Object parentData) {
-            this.parentData = parentData;
-            return this;
-        }
-
-        public Activity.Builder user(Object user) {
-            this.user = user;
-            return this;
-        }
-
-        public Activity build() {
-            return new Activity(this);
-        }
-    }
 }
