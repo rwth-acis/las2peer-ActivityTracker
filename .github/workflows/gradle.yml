@@ -1,5 +1,5 @@
 name: Gradle Build & Test
-on: [pull_request]
+on: [pull_request, push]
 
 jobs:
   build:
@@ -38,3 +38,9 @@ jobs:
         env:
           PORT: ${{ job.services.mysql.ports[3306] }}
         run: ./gradlew clean build --info -Pdb.port=$PORT
+      - uses: codecov/codecov-action@v1
+        with:
+          flags: unittests
+          files: ./activity_tracker/build/reports/jacoco/test/jacocoTestReport.xml
+          fail_ci_if_error: true
+          verbose: true
