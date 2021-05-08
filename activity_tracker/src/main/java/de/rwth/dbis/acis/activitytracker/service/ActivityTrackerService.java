@@ -15,6 +15,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerExcept
 import de.rwth.dbis.acis.activitytracker.service.exception.ErrorCode;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionHandler;
 import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
+import de.rwth.dbis.acis.activitytracker.service.helpers.ConcurrentFifoHashmap;
 import de.rwth.dbis.acis.activitytracker.service.network.HttpRequestCallable;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
@@ -74,6 +75,9 @@ public class ActivityTrackerService extends RESTService {
     private final int MQTT_VERSION = 1;
     private DataSource dataSource;
     private ValidatorFactory validatorFactory;
+    private ConcurrentFifoHashmap<String, Object> activityPageZeroCache;
+    private ConcurrentFifoHashmap<String, Object> activityCache;
+
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
@@ -81,6 +85,8 @@ public class ActivityTrackerService extends RESTService {
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
 
         validatorFactory = Validation.buildDefaultValidatorFactory();
+        activityPageZeroCache = new ConcurrentFifoHashmap<>(20*5);
+        activityCache = new ConcurrentFifoHashmap<>(200);
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
@@ -92,6 +98,8 @@ public class ActivityTrackerService extends RESTService {
         dataSource.setValidationQuery("SELECT 1;");
         dataSource.setTestOnBorrow(true); // test each connection when borrowing from the pool with the validation query
         dataSource.setMaxConnLifetimeMillis(1000 * 60 * 60); // max connection life time 1h. mysql drops connection after 8h.
+        dataSource.setMinIdle(2);
+        dataSource.setInitialSize(2);
         return dataSource;
     }
 
@@ -143,8 +151,15 @@ public class ActivityTrackerService extends RESTService {
         }
     }
 
-    private List<Activity> getObjectBodies(CloseableHttpClient httpclient, ExecutorService executor, String authorizationToken,
-                                           List<Activity> activities, Map<String, Object> tempObjectStorage) throws Exception {
+    private List<Activity> getObjectBodies(
+            CloseableHttpClient httpclient,
+            ExecutorService executor,
+            String authorizationToken,
+            List<Activity> activities,
+            Map<String, Object> tempObjectStorage,
+            DALFacade facade)
+            throws Exception {
+
         List<Activity> activitiesWithObjectBodies = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
@@ -210,7 +225,8 @@ public class ActivityTrackerService extends RESTService {
                     logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Object not visible for user token or anonymous. Skip object.");
                 } else if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.NOT_FOUND) {
-                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource not found. Skip object.");
+                    logger.log(L2pLogger.DEFAULT_CONSOLE_LEVEL, "Resource" + activity.getId() + "not found. Skipping object");
+                    facade.markStale(activity.getId());
                 } else if (exCause instanceof ActivityTrackerException &&
                         ((ActivityTrackerException) exCause).getErrorCode() == ErrorCode.UNKNOWN &&
                         ((ActivityTrackerException) exCause).getLocation() == ExceptionLocation.NETWORK) {
@@ -365,7 +381,7 @@ public class ActivityTrackerService extends RESTService {
         public Response getActivities(
                 @ApiParam(value = "Before cursor pagination", required = false) @DefaultValue("-1") @QueryParam("before") int before,
                 @ApiParam(value = "After cursor pagination", required = false) @DefaultValue("-1") @QueryParam("after") int after,
-                @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("10") @QueryParam("limit") int limit,
+                @ApiParam(value = "Limit of activity elements", required = false) @DefaultValue("20") @QueryParam("limit") int limit,
                 @ApiParam(value = "Parameter to include or exclude the child elements 'data', 'parentData' and 'user'", required = false, allowableValues = "true, false") @DefaultValue("true") @QueryParam("fillChildElements") boolean fillChildElements,
                 @ApiParam(value = "Search string", required = false) @QueryParam("search") String search,
                 @ApiParam(value = "activityAction filter", required = false, allowMultiple = true) @QueryParam("activityAction") List<String> activityActionFilter,
@@ -428,27 +444,32 @@ public class ActivityTrackerService extends RESTService {
 
                 ExecutorService executor = Executors.newCachedThreadPool();
 
-                Map<String, Object> tempObjectStorage = new HashMap<>();
-
-                int getObjectCount = 0;
                 Pageable pageInfo = new PageInfo(cursor, limit, filters, sortDirection, search);
                 PaginationResult<Activity> activitiesPaginationResult;
                 List<Activity> activities = new ArrayList<>();
-                while (activities.size() < limit && getObjectCount < 5) {
-                    activitiesPaginationResult = dalFacade.findActivities(pageInfo);
-                    getObjectCount++;
-                    if (fillChildElements) {
-                        activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), tempObjectStorage));
-                    } else {
-                        for (Activity activity : activitiesPaginationResult.getElements()) {
-                            if (activity.isPublicActivity()) {
-                                activities.add(activity);
-                            } else if (service.isVisible(httpclient, executor, authorizationToken, activity, tempObjectStorage)) {
-                                activities.add(activity);
-                            }
+
+                // Choose which cache to use
+                // First page has a dedicated delta cache
+                ConcurrentFifoHashmap<String, Object> cache;
+                if (limit == 20 && before == -1) {
+                    cache = service.activityPageZeroCache;
+                } else {
+                    cache = service.activityCache;
+                }
+
+                activitiesPaginationResult = dalFacade.findActivities(pageInfo);
+                if (fillChildElements) {
+                    activities.addAll(service.getObjectBodies(httpclient, executor, authorizationToken, activitiesPaginationResult.getElements(), cache, dalFacade));
+                } else {
+                    for (Activity activity : activitiesPaginationResult.getElements()) {
+                        if (activity.isPublicActivity()) {
+                            activities.add(activity);
+                        } else if (service.isVisible(httpclient, executor, authorizationToken, activity, cache)) {
+                            activities.add(activity);
                         }
                     }
                 }
+
 
                 // create new PaginationResult from enriched activities
                 activitiesPaginationResult = new PaginationResult<>(pageInfo, activities);
@@ -496,9 +517,8 @@ public class ActivityTrackerService extends RESTService {
                 responseBuilder = responseBuilder.entity(activitiesPaginationResult.toJSON());
                 responseBuilder = service.paginationLinks(responseBuilder, activitiesPaginationResult.getPageable(), "", parameter);
                 responseBuilder = service.xHeaderFields(responseBuilder, activitiesPaginationResult.getPageable());
-                Response response = responseBuilder.build();
 
-                return response;
+                return responseBuilder.build();
 
             } catch (ActivityTrackerException atException) {
                 service.logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + atException.getMessage());

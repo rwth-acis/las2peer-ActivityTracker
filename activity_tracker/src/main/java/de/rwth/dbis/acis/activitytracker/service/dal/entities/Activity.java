@@ -54,6 +54,10 @@ public class Activity extends EntityBase {
 
     @JsonIgnore
     @lombok.Builder.Default
+    private Boolean stale = false;
+
+    @JsonIgnore
+    @lombok.Builder.Default
     private boolean publicActivity = true;
 
     @JsonDeserialize(using = JsonElementDeserialize.class)
