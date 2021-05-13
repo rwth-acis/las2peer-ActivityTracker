@@ -12,4 +12,6 @@ public interface DALFacade {
     PaginationResult<Activity> findActivities(Pageable pageable) throws ActivityTrackerException;
 
     Activity createActivity(Activity activity) throws ActivityTrackerException;
+
+    void markStale(int activityId) throws ActivityTrackerException;
 }

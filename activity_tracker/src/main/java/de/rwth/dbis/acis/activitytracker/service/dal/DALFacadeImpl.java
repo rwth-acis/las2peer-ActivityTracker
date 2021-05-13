@@ -38,4 +38,13 @@ public class DALFacadeImpl implements DALFacade {
     public Activity createActivity(Activity activity) throws ActivityTrackerException {
         return activityRepository.add(activity);
     }
+
+    @Override
+    public void markStale(int activityId) throws ActivityTrackerException {
+            Activity activity = activityRepository.findById(activityId);
+
+            activity.setStale(true);
+
+            activityRepository.update(activity);
+    }
 }

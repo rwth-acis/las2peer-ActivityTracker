@@ -14,6 +14,7 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.Activity.ACTIVITY;
@@ -34,6 +35,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         activityRecord.setParentDataType(entity.getParentDataType());
         activityRecord.setUserUrl(entity.getUserUrl());
         activityRecord.setPublic(entity.isPublicActivity());
+        activityRecord.setStale(entity.getStale());
 
         // TODO: Reconsider parsing between jackson and jooq. Maybe involve SO
         activityRecord.setAdditionalObject(entity.getAdditionalObject() == null ? null : json(entity.getAdditionalObject().toString()));
@@ -68,6 +70,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 .userUrl(record.getUserUrl())
                 .publicActivity(record.getPublic())
                 .additionalObject(actualObj)
+                .stale(record.getStale())
                 .build();
     }
 
@@ -88,7 +91,9 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
 
     @Override
     public Map<Field, Object> getUpdateMap(Activity entity) {
-        return new HashMap<>();
+        return new HashMap<>() {{
+            put(ACTIVITY.STALE, entity.getStale());
+        }};
     }
 
     @Override
@@ -158,8 +163,9 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
                 }
                 conditions.add(orConcat);
             }
-
         }
+        // Always filter out stale objects
+        conditions.add(ACTIVITY.STALE.isFalse());
         return conditions;
     }
 
