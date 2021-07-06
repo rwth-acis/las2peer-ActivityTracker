@@ -18,10 +18,10 @@ plugins {
     id 'java'
     id 'application'
     id 'idea'
-    id "org.flywaydb.flyway" version "7.3.2"
     id "nu.studer.jooq" version "5.2"
     id "io.freefair.lombok" version "5.3.0"
     id 'jacoco'
+    id 'org.liquibase.gradle' version '2.0.4'
 }
 
 application {
@@ -52,22 +52,28 @@ dependencies {
     testImplementation 'junit:junit:4.13'
     testImplementation 'com.google.code.gson:gson:2.8.6'
 
+    liquibaseRuntime "org.liquibase:liquibase-core:${project.property('liquibase.version')}"
+    liquibaseRuntime 'org.yaml:snakeyaml:1.29'
+    liquibaseRuntime "org.postgresql:postgresql:${project.property('postgres.version')}"
+    liquibaseRuntime 'javax.xml.bind:jaxb-api:2.3.1'
+
     // las2peer bundle which is not necessary in the runtime path
     // compileOnly will be moved into the lib dir afterwards
     compileOnly "i5:las2peer-bundle:${project.property('core.version')}"
+    compileOnly "org.postgresql:postgresql:${project.property('postgres.version')}"
     compileOnly "mysql:mysql-connector-java:${project.property('mysql.version')}"
     compileOnly 'org.hibernate:hibernate-validator:5.4.3.Final'
     compileOnly 'org.glassfish:jakarta.el:3.0.3'
     compileOnly 'javax.validation:validation-api:1.1.0.Final'
 
     // This is for the jooq generation only
-    jooqGenerator "mysql:mysql-connector-java:${project.property('mysql.version')}"
     jooqGenerator "org.jooq:jooq-codegen:${project.property('jooq.version')}"
     jooqGenerator "org.jooq:jooq-meta-extensions:${project.property('jooq.version')}"
+    jooqGenerator "org.jooq:jooq-meta-extensions-liquibase:${project.property('jooq.version')}"
+    jooqGenerator 'org.yaml:snakeyaml:1.29'
 
 
     // These dependencies are used by the application.
-    implementation "org.flywaydb:flyway-core:7.3.2"
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
     implementation 'org.slf4j:slf4j-nop:1.7.25'
     implementation 'com.h2database:h2:1.4.191'
@@ -159,58 +165,30 @@ jooq {
         main {  // name of the jOOQ configuration
             generationTool {
                 logging = org.jooq.meta.jaxb.Logging.WARN
-                //jdbc {
-                //    driver = 'com.mysql.cj.jdbc.Driver'
-                //    url = "jdbc:mysql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
-                //    user = "${project.property('db.user')}"
-                //    password = "${project.property('db.password')}"
-                //}
                 generator {
-                    name = 'org.jooq.codegen.DefaultGenerator'
                     database {
-                        name = 'org.jooq.meta.extensions.ddl.DDLDatabase'
-                        //inputSchema = "${project.property('db.name')}"
+                        name = 'org.jooq.meta.extensions.liquibase.LiquibaseDatabase'
                         properties {
 
-                            // Specify the location of your SQL script.
-                            // You may use ant-style file matching, e.g. /path/**/to/*.sql
-                            //
-                            // Where:
-                            // - ** matches any directory subtree
-                            // - * matches any number of characters in a directory / file name
-                            // - ? matches a single character in a directory / file name
+                            // Specify the location of your XML, YAML, or JSON script.
                             property {
                                 key = 'scripts'
-                                value = 'src/main/resources/migrations/*.sql'
+                                value = "$projectDir/src/main/resources/changelog.yaml"
                             }
 
-                            // The sort order of the scripts within a directory, where:
-                            //
-                            // - semantic: sorts versions, e.g. v-3.10.0 is after v-3.9.0 (default)
-                            // - alphanumeric: sorts strings, e.g. v-3.10.0 is before v-3.9.0
-                            // - flyway: sorts files the same way as flyway does
-                            // - none: doesn't sort directory contents after fetching them from the directory
                             property {
-                                key = 'sort'
-                                value = 'flyway'
+                                key = 'includeLiquibaseTables'
+                                value = false
                             }
 
-                            // The default schema for unqualified objects:
-                            //
-                            // - public: all unqualified objects are located in the PUBLIC (upper case) schema
-                            // - none: all unqualified objects are located in the default schema (default)
-                            //
-                            // This configuration can be overridden with the schema mapping feature
+                            // The property "changeLogParameters.contexts" will be passed on to the
+                            // liquibase.database.Database.update() call (jOOQ 3.13.2+).
+                            // See https://www.liquibase.org/documentation/contexts.html
                             property {
-                                key = 'unqualifiedSchema'
-                                value = 'public'
+                                key = 'changeLogParameters.contexts'
+                                value = '!test'
                             }
 
-                            // The default name case for unquoted objects:
-                            //
-                            // - as_is: unquoted object names are kept unquoted
-                            // - upper: unquoted object names are turned into upper case (most databases)
-                            // - lower: unquoted object names are turned into lower case (e.g. PostgreSQL)
                             property {
                                 key = 'defaultNameCase'
                                 value = 'lower'
@@ -235,21 +213,25 @@ jooq {
     }
 }
 
-flyway {
-    url = "jdbc:mysql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
-    user = "${project.property('db.user')}"
-    password = "${project.property('db.password')}"
-    schemas = ['reqbaztrack']
-    // Flyway now uses 'flyway_schema_history' to retain compatibility override this
-    table = 'schema_version'
-    locations = ["filesystem:$project.projectDir/src/main/resources/migrations"]
+liquibase {
+    activities {
+        main {
+            defaultSchemaName 'public'
+            changeLogFile "src/main/resources/changelog.yaml"
+            classpath "$projectDir"
+            url "jdbc:postgresql://${project.property('db.hostname')}:${project.property('db.port')}/${project.property('db.name')}"
+            username "${project.property('db.user')}"
+            password "${project.property('db.password')}"
+            loglevel 'info'
+        }
+    }
 }
 
-test.dependsOn flywayMigrate
+test.dependsOn update
 
 
 // Build export directory which can be shipped on request
-task export (type: Copy, dependsOn: build) {
+task export(type: Copy, dependsOn: build) {
     into "$buildDir/export"
 
     into("service") {

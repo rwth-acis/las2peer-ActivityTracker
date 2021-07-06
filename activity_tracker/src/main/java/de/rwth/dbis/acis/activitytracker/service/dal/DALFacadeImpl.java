@@ -8,6 +8,8 @@ import de.rwth.dbis.acis.activitytracker.service.dal.repositories.ActivityReposi
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
+import org.jooq.conf.RenderNameCase;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 
 import javax.sql.DataSource;
@@ -15,10 +17,14 @@ import javax.sql.DataSource;
 public class DALFacadeImpl implements DALFacade {
 
     private final DSLContext dslContext;
-    private ActivityRepository activityRepository;
+    private final ActivityRepository activityRepository;
 
     public DALFacadeImpl(DataSource dataSource, SQLDialect dialect) {
-        dslContext = DSL.using(dataSource, dialect);
+        Settings settings = new Settings();
+        if (dialect.equals(SQLDialect.POSTGRES)) {
+            settings.withRenderNameCase(RenderNameCase.LOWER);              // Defaults to AS_IS
+        }
+        dslContext = DSL.using(dataSource, dialect, settings);
         activityRepository = new ActivityRepositoryImpl(dslContext);
     }
 
@@ -41,10 +47,10 @@ public class DALFacadeImpl implements DALFacade {
 
     @Override
     public void markStale(int activityId) throws ActivityTrackerException {
-            Activity activity = activityRepository.findById(activityId);
+        Activity activity = activityRepository.findById(activityId);
 
-            activity.setStale(true);
+        activity.setStale(true);
 
-            activityRepository.update(activity);
+        activityRepository.update(activity);
     }
 }
