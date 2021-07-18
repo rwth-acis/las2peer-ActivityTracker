@@ -7,19 +7,13 @@ if [[ ! -z "${DEBUG}" ]]; then
   set -x
 fi
 
-function getProperty() {
-  PROP_KEY=$1
-  PROP_VALUE=$(cat $PROPERTY_FILE | grep "$PROP_KEY" | cut -d'=' -f2)
-  echo $PROP_VALUE
-}
-
 # set some helpful variables
 export SERVICE_PROPERTY_FILE='etc/de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService.properties'
 export WEB_CONNECTOR_PROPERTY_FILE='etc/i5.las2peer.connectors.webConnector.WebConnector.properties'
 
-export SERVICE_VERSION=$(getProperty "service.version")
-export SERVICE_NAME=$(getProperty "service.name")
-export SERVICE_CLASS=$(getProperty "service.class")
+export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' gradle.properties)
+export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' gradle.properties)
+export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties)
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
 
 export POSTGRES_DATABASE='reqbaztrack'
