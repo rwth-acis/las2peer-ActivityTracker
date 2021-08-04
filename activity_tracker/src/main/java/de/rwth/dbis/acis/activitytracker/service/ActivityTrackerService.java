@@ -63,35 +63,34 @@ import static org.eclipse.paho.client.mqttv3.MqttClient.generateClientId;
 public class ActivityTrackerService extends RESTService {
 
     private final L2pLogger logger = L2pLogger.getInstance(ActivityTrackerService.class.getName());
+    private final int MQTT_VERSION = 1;
+    private final DataSource dataSource;
+    private final ValidatorFactory validatorFactory;
+    private final ConcurrentFifoHashmap<String, Object> activityPageZeroCache;
+    private final ConcurrentFifoHashmap<String, Object> activityCache;
     //CONFIG PROPERTIES
     protected String dbUserName;
     protected String dbPassword;
     protected String dbUrl;
+    protected String dbVendor;
     protected String baseURL;
     protected String mqttBroker;
     protected String mqttUserName;
     protected String mqttPassword;
     protected String mqttOrganization;
-    private final int MQTT_VERSION = 1;
-    private DataSource dataSource;
-    private ValidatorFactory validatorFactory;
-    private ConcurrentFifoHashmap<String, Object> activityPageZeroCache;
-    private ConcurrentFifoHashmap<String, Object> activityCache;
 
 
     public ActivityTrackerService() throws Exception {
         setFieldValues();
-        Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
         dataSource = setupDataSource(dbUrl, dbUserName, dbPassword);
 
         validatorFactory = Validation.buildDefaultValidatorFactory();
-        activityPageZeroCache = new ConcurrentFifoHashmap<>(20*5);
+        activityPageZeroCache = new ConcurrentFifoHashmap<>(20 * 5);
         activityCache = new ConcurrentFifoHashmap<>(200);
     }
 
     private static DataSource setupDataSource(String dbUrl, String dbUserName, String dbPassword) {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setUrl(dbUrl + "?useSSL=false&serverTimezone=UTC");
         dataSource.setUsername(dbUserName);
         dataSource.setPassword(dbPassword);
@@ -121,7 +120,7 @@ public class ActivityTrackerService extends RESTService {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             mapper.readValue(activity, Activity.class);
             Activity activityToCreate = mapper.readValue(activity, Activity.class);
-            this.storeActivity(activityToCreate);
+            storeActivity(activityToCreate);
             return Integer.toString(Response.Status.CREATED.getStatusCode());
         } catch (Exception exception) {
             logger.log(L2pLogger.DEFAULT_LOGFILE_LEVEL, "Error: " + exception.getMessage());
@@ -138,16 +137,16 @@ public class ActivityTrackerService extends RESTService {
 
         DALFacade dalFacade = null;
         try {
-            dalFacade = this.getDBConnection();
+            dalFacade = getDBConnection();
             Activity createdActivity = dalFacade.createActivity(activity);
             if (mqttBroker != null && !mqttBroker.isEmpty()) {
-                this.publishMQTT(createdActivity);
+                publishMQTT(createdActivity);
             }
             return createdActivity;
         } catch (Exception ex) {
             throw ExceptionHandler.getInstance().convert(ex, ExceptionLocation.ACTIVITYTRACKERSERVICE, ErrorCode.UNKNOWN, "Could not store activity");
         } finally {
-            this.closeDBConnection(dalFacade);
+            closeDBConnection(dalFacade);
         }
     }
 
@@ -333,11 +332,17 @@ public class ActivityTrackerService extends RESTService {
     }
 
     public DALFacade getDBConnection() throws Exception {
-        return new DALFacadeImpl(dataSource, SQLDialect.MYSQL);
+        SQLDialect dialect = SQLDialect.POSTGRES;
+        if (Objects.equals(dbVendor, "mysql")) {
+            dialect = SQLDialect.MYSQL;
+        }
+        return new DALFacadeImpl(dataSource, dialect);
     }
 
     public void closeDBConnection(DALFacade dalFacade) {
-        if (dalFacade == null) return;
+        if (dalFacade == null) {
+            return;
+        }
         dalFacade.close();
     }
 
@@ -386,13 +391,13 @@ public class ActivityTrackerService extends RESTService {
                 @ApiParam(value = "Search string", required = false) @QueryParam("search") String search,
                 @ApiParam(value = "activityAction filter", required = false, allowMultiple = true) @QueryParam("activityAction") List<String> activityActionFilter,
                 @ApiParam(value = "origin filter", required = false, allowMultiple = true) @QueryParam("origin") List<String> originFilter,
-                @ApiParam(value = "dataType filter", required = false, allowMultiple = true) @QueryParam("dataType") List<String>  dataTypeFilter,
+                @ApiParam(value = "dataType filter", required = false, allowMultiple = true) @QueryParam("dataType") List<String> dataTypeFilter,
                 @ApiParam(value = "dataUrl filter", required = false, allowMultiple = true) @QueryParam("dataUrl") List<String> dataUrlFilter,
                 @ApiParam(value = "parentDataType filter", required = false, allowMultiple = true) @QueryParam("parentDataType") List<String> parentDataTypeFilter,
                 @ApiParam(value = "parentDataUrl filter", required = false, allowMultiple = true) @QueryParam("parentDataUrl") List<String> parentDataUrlFilter,
                 @ApiParam(value = "userUrl filter", required = false, allowMultiple = true) @QueryParam("userUrl") List<String> userUrlFilter,
                 @ApiParam(value = "Combined filter on activityAction, dataType and optionally parentDataType"
-                        + "Syntax: activityAction-dataType[-parentDataType] ; use * as wildcard"+
+                        + "Syntax: activityAction-dataType[-parentDataType] ; use * as wildcard" +
                         "Example: a-b => activityAction == a && dataType ==b; a-*-c => activityAction==a && parentDataType == c"
                         , required = false, allowMultiple = true) @QueryParam("combinedFilter") List<String> combinedFilter,
                 @ApiParam(value = "User authorization token", required = false) @DefaultValue("") @HeaderParam("authorization") String authorizationToken) throws ActivityTrackerException {
@@ -422,7 +427,7 @@ public class ActivityTrackerService extends RESTService {
                     filters.put("dataUrl", dataUrlFilter);
                 }
                 if (!parentDataTypeFilter.isEmpty()) {
-                    filters.put("parentDataType",parentDataTypeFilter);
+                    filters.put("parentDataType", parentDataTypeFilter);
                 }
                 if (!parentDataUrlFilter.isEmpty()) {
                     filters.put("parentDataUrl", parentDataUrlFilter);

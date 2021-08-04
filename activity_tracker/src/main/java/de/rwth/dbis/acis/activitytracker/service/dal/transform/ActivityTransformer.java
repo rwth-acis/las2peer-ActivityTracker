@@ -4,7 +4,7 @@ package de.rwth.dbis.acis.activitytracker.service.dal.transform;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.records.ActivityRecord;
+import de.rwth.dbis.acis.activitytracker.dal.jooq.tables.records.ActivityRecord;
 import de.rwth.dbis.acis.activitytracker.service.dal.entities.Activity;
 import de.rwth.dbis.acis.activitytracker.service.dal.helpers.Pageable;
 import de.rwth.dbis.acis.activitytracker.service.exception.ActivityTrackerException;
@@ -14,10 +14,9 @@ import de.rwth.dbis.acis.activitytracker.service.exception.ExceptionLocation;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
-import static de.rwth.dbis.acis.activitytracker.dal.jooq.reqbaztrack.tables.Activity.ACTIVITY;
+import static de.rwth.dbis.acis.activitytracker.dal.jooq.tables.Activity.ACTIVITY;
 import static org.jooq.JSON.json;
 
 public class ActivityTransformer implements Transformer<Activity, ActivityRecord> {
@@ -123,39 +122,39 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         List<Condition> conditions = new ArrayList<>();
         for (Map.Entry<String, List<String>> filterEntry : filters.entrySet()) {
             if (filterEntry.getKey().equals("activityAction")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.ACTIVITY_ACTION));
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.ACTIVITY_ACTION));
             }
             if (filterEntry.getKey().equals("origin")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.ORIGIN));
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.ORIGIN));
             }
             if (filterEntry.getKey().equals("dataType")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.DATA_TYPE));          //conditions.add(ACTIVITY.DATA_TYPE.in(filterEntry.getValue())); more elegant but no way to make case-insensitive
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.DATA_TYPE));          //conditions.add(ACTIVITY.DATA_TYPE.in(filterEntry.getValue())); more elegant but no way to make case-insensitive
             }
             if (filterEntry.getKey().equals("dataUrl")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.DATA_URL));
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.DATA_URL));
             }
             if (filterEntry.getKey().equals("parentDataType")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.PARENT_DATA_TYPE));
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.PARENT_DATA_TYPE));
             }
             if (filterEntry.getKey().equals("parentDataUrl")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.PARENT_DATA_URL));
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.PARENT_DATA_URL));
             }
             if (filterEntry.getKey().equals("userUrl")) {
-                conditions.add(this.listToOrConcat(filterEntry.getValue(), ACTIVITY.USER_URL));
+                conditions.add(listToOrConcat(filterEntry.getValue(), ACTIVITY.USER_URL));
             }
             if (filterEntry.getKey().equals("combinedFilter")) {
                 Condition orConcat = DSL.falseCondition();
                 for (String filter : filterEntry.getValue()) {
                     Condition andConcat = DSL.trueCondition();
                     String[] parts = filter.split("-");
-                    if(parts.length>=2){
-                        if(!parts[0].equals("*")){
+                    if (parts.length >= 2) {
+                        if (!parts[0].equals("*")) {
                             andConcat = andConcat.and(ACTIVITY.ACTIVITY_ACTION.equalIgnoreCase(parts[0]));
                         }
-                        if(!parts[1].equals("*")){
+                        if (!parts[1].equals("*")) {
                             andConcat = andConcat.and(ACTIVITY.DATA_TYPE.equalIgnoreCase(parts[1]));
                         }
-                        if(parts.length == 3 && !parts[2].equals("*")){
+                        if (parts.length == 3 && !parts[2].equals("*")) {
                             andConcat = andConcat.and(ACTIVITY.PARENT_DATA_TYPE.equalIgnoreCase(parts[2]));
                         }
                         orConcat = orConcat.or(andConcat);
@@ -169,7 +168,7 @@ public class ActivityTransformer implements Transformer<Activity, ActivityRecord
         return conditions;
     }
 
-    private Condition listToOrConcat(List<String> entries, TableField<ActivityRecord, String> field){
+    private Condition listToOrConcat(List<String> entries, TableField<ActivityRecord, String> field) {
         Condition result = DSL.falseCondition();
         for (String entry : entries) {
             result = result.or(field.equalIgnoreCase(entry));
