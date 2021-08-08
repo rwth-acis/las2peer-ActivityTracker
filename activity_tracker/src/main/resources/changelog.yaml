@@ -15,9 +15,9 @@ databaseChangeLog:
               - column:
                   constraints:
                     nullable: false
-                  defaultValueComputed: CURRENT_TIMESTAMP
+                  defaultValueComputed: now()
                   name: creation_date
-                  type: timestamp
+                  type: TIMESTAMP WITH TIME ZONE
               - column:
                   constraints:
                     nullable: false
