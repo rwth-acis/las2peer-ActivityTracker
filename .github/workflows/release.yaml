@@ -31,9 +31,9 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           body: |
-            This is the {{ steps.get_version.outputs.version }} release. For changes please check the [Changelog](https://github.com/rwth-acis/las2peer-ActivityTracker/blob/develop/CHANGELOG.md).
+            This is the ${{ steps.get_version.outputs.version }} release. For changes please check the [Changelog](https://github.com/rwth-acis/las2peer-ActivityTracker/blob/develop/CHANGELOG.md).
           draft: false
-          prerelease: true
+          prerelease: false
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
