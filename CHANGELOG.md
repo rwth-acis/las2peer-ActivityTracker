@@ -10,6 +10,8 @@ the [GitHub Release Page](https://github.com/rwth-acis/las2peer-ActivityTracker/
 
 ## [Unreleased]
 
+## [0.8.0] - 2021-09-08
+
 ### Added
 
 - Added new testcases [#43](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/43)
@@ -29,7 +31,7 @@ the [GitHub Release Page](https://github.com/rwth-acis/las2peer-ActivityTracker/
 - Replaced vtor with Java Bean Validation [#44](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/44)
 - Remove static code from data classes and generate getter/setters and builder with
   lombok. [#46](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/46)
-- Switch backend database to postgres [#48](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/48)
+- Switch default backend database to postgres [#48](https://github.com/rwth-acis/las2peer-ActivityTracker/pull/48)
 
 ### Removed
 
