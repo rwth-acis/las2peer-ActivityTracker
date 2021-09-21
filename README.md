@@ -29,28 +29,28 @@ API documentation endpoint:
 
 Technology
 -------------------
-The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project. 
-For persisting our data we use MySQL database and jOOQ to access it. User input validation is done using Jodd Vtor library and for serializing our data into JSON format, we use the Jackson library. As MQTT client we use Eclipse Paho.
+The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project.
+For persisting our data we use a PostgreSQL database and jOOQ to access it. User input validation is done using Java Bean Validation and for serializing our data into JSON format, we use the Jackson library. As MQTT client we use Eclipse Paho.
 
 Dependencies
 -------------------
 In order to be able to run this service project the following components should be installed on your system:
 
- - JDK (min v1.8) + Java Cryptography Extension (JCE) 
- - MySQL 5.7 
+ - JDK 14
+ - PostgreSQL 12 or newer
  - Gradle to build
-  
+
 ----------
-  
+
 How to set up the database
 -------------------
  1. `git clone` this repo
  2. To configure your database access look at the [Configuration](#configuration) section
  3. Create a new database called `reqbaztrack`, possibly with UTF-8 collation
  4. Compile the project with `./gradlew build`
- 5. Run `./gradlew flywayMigrate` to create your db schema or migrate to a newer version while updating your service
+ 5. Run `./gradlew update` to create your db schema or migrate to a newer version while updating your service
  6. If you need sample data import the file `etc/add_activitytracker_demo_data.sql` into your database.
-  
+
 Configuration
 -------------------
 You need to configure the service to your own specific environment. Here is the list of configuration variables:
@@ -59,6 +59,7 @@ You need to configure the service to your own specific environment. Here is the 
  - `dbUserName`:	Database username, which will be used to access the database
  - `dbPassword`:	Database user password, which will be used to access the database
  - `dbUrl`:			JDBC Connection string to access the database
+ - `dbVendor`:      Choose the backend db to use (mysql or postgres (default: postgres))
  - `baseURL`:       Base URL this service runs on
  - `mqttBroker`:    MQTT Broker, if this field is set it enables MQTT publish of new activities (optional).
  - `mqttUserName`:  MQTT username to publish to broker, if this field is set MQTT use username and password. If not it MQTT doe not use authorize to broker (optional).
@@ -73,8 +74,8 @@ For build management we use Gradle. To build the cloned code, please use a conso
 
  - `./gradlew build`
 
-Make sure your database settings are configured correctly in the `settings.gradle` since jooq requires the applied database schema to generate the respective code.
-Flyway will automatically take care of applying the necessary database schema migrations.
+Make sure your database settings are configured correctly in the `settings.gradle` and `activity_tracker/etc` setting,  since the test cases require a database.
+Liquibase will automatically take care of applying the necessary database schema migrations.
 
 How to run
 -------------------
@@ -95,11 +96,11 @@ docker build . -t activity-tracker
 Then you can run the image like this:
 
 ```bash
-docker run -e MYSQL_USER=myuser -e MYSQL_PASSWORD=mypasswd -p 8080:8080 -p 9011:9011 activity-tracker
+docker run -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypasswd -p 8080:8080 -p 9011:9011 activity-tracker
 ```
 
-Replace *myuser* and *mypasswd* with the username and password of a MySQL user with access to a database named *reqbaztrack*.
-By default the database host is *mysql* and the port is *3306*.
+Replace *myuser* and *mypasswd* with the username and password of a PostgreSQL user with access to a database named *reqbaztrack*.
+By default the database host is *postgres* and the port is *5432*.
 The REST-API will be available via *http://localhost:8080/activities* and the las2peer node is available via port 9011.
 
 In order to customize your setup you can set further environment variables.
@@ -121,10 +122,10 @@ See [configuration](#configuration) for a description of the settings.
 
 | Variable | Default |
 |----------|---------|
-| MYSQL_USER | *mandatory* |
-| MYSQL_PASSWORD | *mandatory* |
-| MYSQL_HOST | mysql |
-| MYSQL_PORT | 3306 |
+| POSTGRES_USER | *mandatory* |
+| POSTGRES_PASSWORD | *mandatory* |
+| POSTGRES_HOST | postgres |
+| POSTGRES_PORT | 5432 |
 | BASE_URL | http://localhost:8080/activities/ |
 | MQTT_BROKER | "" |
 | MQTT_USER | "" |
@@ -159,7 +160,7 @@ Set [WebConnector properties](https://github.com/rwth-acis/las2peer-Template-Pro
 If the variables are not sufficient for your setup you can customize how the node is started via arguments after the image name.
 In this example we start the node in interactive mode:
 ```bash
-docker run -it -e MYSQL_USER=myuser -e MYSQL_PASSWORD=mypasswd activity-tracker startService\(\'de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.6.0\', \'Passphrase\'\) startWebConnector interactive
+docker run -it -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypasswd activity-tracker startService\(\'de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.6.0\', \'Passphrase\'\) startWebConnector interactive
 ```
 Inside the container arguments are placed right behind the launch node command:
 ```bash
