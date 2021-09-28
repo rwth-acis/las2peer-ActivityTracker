@@ -1,0 +1,5 @@
+FROM liquibase/liquibase:4.4.0
+
+ADD activity_tracker/src/main/resources/changelog.yaml /liquibase/changelog/
+
+CMD docker-entrypoint.sh --url=jdbc:postgresql://${HOST}:5432/reqbaztrack --username=${USERNAME} --password=${PASSWORD} --classpath=/liquibase/changelog --changeLogFile=changelog.yaml update

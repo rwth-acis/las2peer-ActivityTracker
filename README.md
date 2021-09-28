@@ -8,7 +8,7 @@ las2peer-ActivityTracker is a microservice to provide activity information for l
 The activity tracker response to HTTP or (las2peer) p2p requests and can fetch activity objects from the origin microservice which created an activity.
 This service has also build-in MQTT support, so that all new activities will get publish to an MQTT broker of your choice. To enable MQTT publish please provide the MQTT information in the configuration file.
 
-We also provide a modern webcomponent frontend for this service which you can find also on **[<i class="icon-link "></i>Github](https://github.com/rwth-acis/activity-tracker)**.
+We also provide a modern webcomponent frontend for this service which you can find on **[<i class="icon-link "></i>Github](https://github.com/rwth-acis/activity-tracker)**.
 
 The service is under development. You can participate by creating pull requests or by discussing ideas and requirements inside **[<i class="icon-link "></i>Requirements-Bazaar](https://requirements-bazaar.org/projects/2/categories/169)**.
 
@@ -29,67 +29,155 @@ API documentation endpoint:
 
 Technology
 -------------------
-The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project. 
-For persisting our data we use MySQL database and jOOQ to access it. User input validation is done using Jodd Vtor library and for serializing our data into JSON format, we use the Jackson library. As MQTT client we use Eclipse Paho.
+The activity tracker is built on Java technologies. As a service framework we use our in-house developed **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project.
+For persisting our data we use a PostgreSQL database and jOOQ to access it. User input validation is done using Java Bean Validation and for serializing our data into JSON format, we use the Jackson library. As MQTT client we use Eclipse Paho.
 
 Dependencies
 -------------------
 In order to be able to run this service project the following components should be installed on your system:
 
- - JDK (min v1.8) + Java Cryptography Extension (JCE) 
- - MySQL 5.7 
- - Apache Ant to build
-  
+ - JDK 14
+ - PostgreSQL 12 or newer
+ - Gradle to build
+
 ----------
-  
+
 How to set up the database
 -------------------
  1. `git clone` this repo
  2. To configure your database access look at the [Configuration](#configuration) section
- 3. Compile the project with `ant`
- 4. Create a new database called `reqbaztrack`, possibly with UTF-8 collation
- 5. Run `ant migrate-db` to create your db schema or migrate to a newer version while updating your service
- 6. If you need sample data run the file `\etc\add_activitytracker_demo_data.sql`
-  
+ 3. Create a new database called `reqbaztrack`, possibly with UTF-8 collation
+ 4. Compile the project with `./gradlew build`
+ 5. Run `./gradlew update` to create your db schema or migrate to a newer version while updating your service
+ 6. If you need sample data import the file `etc/add_activitytracker_demo_data.sql` into your database.
+
 Configuration
 -------------------
-You need to configure the the service to your own specific environment. Here is the list of configuration variables:
+You need to configure the service to your own specific environment. Here is the list of configuration variables:
 
-`\etc\de.rwth.dbis.acis.activity.service.ActivityService.properties`:
+`etc/de.rwth.dbis.acis.activity.service.ActivityService.properties`:
  - `dbUserName`:	Database username, which will be used to access the database
  - `dbPassword`:	Database user password, which will be used to access the database
  - `dbUrl`:			JDBC Connection string to access the database
- - `land`:          Default language setting
- - `country`:       Default country setting
+ - `dbVendor`:      Choose the backend db to use (mysql or postgres (default: postgres))
  - `baseURL`:       Base URL this service runs on
- - `mqttBroker`:    MQTT Broker, if this field is set it enables MQTT publish of new activities
- - `mqttUserName`:  MQTT username to publish to broker, if this field is set MQTT use username and password. If not it MQTT doe not use authorize to broker.
- - `mqttPassword`:  MQTT password to publish to broker
- - `mqttOrganization`: Your organisation name, used as first channel description in MQTT
+ - `mqttBroker`:    MQTT Broker, if this field is set it enables MQTT publish of new activities (optional).
+ - `mqttUserName`:  MQTT username to publish to broker, if this field is set MQTT use username and password. If not it MQTT doe not use authorize to broker (optional).
+ - `mqttPassword`:  MQTT password to publish to broker (optional)
+ - `mqttOrganization`: Your organisation name, used as first channel description in MQTT (optional)
 
 For other configuration settings, check the **[<i class="icon-link "></i>las2peer](https://github.com/rwth-acis/LAS2peer)** project.
 
 Build
 -------------------
-For build management we use Ant. To build the cloned code, please using a console/terminal navigate to the `home` directory, where the `build.xml` file is located and run the following command:
+For build management we use Gradle. To build the cloned code, please use a console/terminal open the projects root directory and run:
 
- - `ant`
- 
-You can also generate a bundled jar with all the dependencies with the command
+ - `./gradlew build`
 
- - `ant jar-big`
+Make sure your database settings are configured correctly in the `settings.gradle` and `activity_tracker/etc` setting,  since the test cases require a database.
+Liquibase will automatically take care of applying the necessary database schema migrations.
 
 How to run
 -------------------
  1. First please make sure you have already [set up the database](#how-to-set-up-the-database)
- 2. Make sure your [config settings](#configuration) are properly set.
+ 2. Make sure your [config settings](#configuration) and gradle settings are properly set.
  3. [Build](#build)
- 4. Open a console/terminal window and navigate to the `\bin` directory
+ 4. Open a console/terminal window and navigate to the `bin` directory
  5. Run the `start_network.bat` or `start_network.sh` script
 
 How to run using Docker
 -------------------
-Docker will be provided at a later point.
+
+First build the image:
+```bash
+docker build . -t activity-tracker
+```
+
+Then you can run the image like this:
+
+```bash
+docker run -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypasswd -p 8080:8080 -p 9011:9011 activity-tracker
+```
+
+Replace *myuser* and *mypasswd* with the username and password of a PostgreSQL user with access to a database named *reqbaztrack*.
+By default the database host is *postgres* and the port is *5432*.
+The REST-API will be available via *http://localhost:8080/activities* and the las2peer node is available via port 9011.
+
+In order to customize your setup you can set further environment variables.
+
+### Node Launcher Variables
+
+Set [las2peer node launcher options](https://github.com/rwth-acis/las2peer-Template-Project/wiki/L2pNodeLauncher-Commands#at-start-up) with these variables.
+The las2peer port is fixed at *9011*.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| BOOTSTRAP | unset | Set the --bootstrap option to bootrap with existing nodes. The container will wait for any bootstrap node to be available before continuing. |
+| SERVICE_PASSPHRASE | Passphrase | Set the second argument in *startService('<service@version>', '<SERVICE_PASSPHRASE>')*. |
+| SERVICE_EXTRA_ARGS | unset | Set additional launcher arguments. Example: ```--observer``` to enable monitoring. |
+
+### Service Variables
+
+See [configuration](#configuration) for a description of the settings.
+
+| Variable | Default |
+|----------|---------|
+| POSTGRES_USER | *mandatory* |
+| POSTGRES_PASSWORD | *mandatory* |
+| POSTGRES_HOST | postgres |
+| POSTGRES_PORT | 5432 |
+| BASE_URL | http://localhost:8080/activities/ |
+| MQTT_BROKER | "" |
+| MQTT_USER | "" |
+| MQTT_PASSWORD | "" |
+| MQTT_ORGANIZATION | "" |
+
+### Web Connector Variables
+
+Set [WebConnector properties](https://github.com/rwth-acis/las2peer-Template-Project/wiki/WebConnector-Configuration) with these variables.
+*httpPort* and *httpsPort* are fixed at *8080* and *8443*.
+
+| Variable | Default |
+|----------|---------|
+| START_HTTP | TRUE |
+| START_HTTPS | FALSE |
+| SSL_KEYSTORE | "" |
+| SSL_KEY_PASSWORD | "" |
+| CROSS_ORIGIN_RESOURCE_DOMAIN | * |
+| CROSS_ORIGIN_RESOURCE_MAX_AGE | 60 |
+| ENABLE_CROSS_ORIGIN_RESOURCE_SHARING | TRUE |
+| OIDC_PROVIDERS | https://api.learning-layers.eu/o/oauth2,https://accounts.google.com |
+
+### Other Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| DEBUG  | unset | Set to any value to get verbose output in the container entrypoint script. |
+| INSERT_DEMO_DATA | unset | Set to any value to insert demo data into the database at startup. |
+
+### Custom Node Startup
+
+If the variables are not sufficient for your setup you can customize how the node is started via arguments after the image name.
+In this example we start the node in interactive mode:
+```bash
+docker run -it -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypasswd activity-tracker startService\(\'de.rwth.dbis.acis.activitytracker.service.ActivityTrackerService@0.6.0\', \'Passphrase\'\) startWebConnector interactive
+```
+Inside the container arguments are placed right behind the launch node command:
+```bash
+java -cp lib/* i5.las2peer.tools.L2pNodeLauncher -s service -p ${LAS2PEER_PORT} <your args>
+```
+
+### Volumes
+
+The following places should be persisted in volumes in productive scenarios:
+
+| Path | Description |
+|------|-------------|
+| /src/node-storage | Pastry P2P storage. |
+| /src/etc/startup | Service agent key pair and passphrase. |
+| /src/log | Log files. |
+
+*Do not forget to persist you database data*
 
 ----------
 

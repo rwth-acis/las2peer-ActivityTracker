@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1625583034570-1
+      author: thore (generated)
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                  name: id
+                  type: INT
+              - column:
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: now()
+                  name: creation_date
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  constraints:
+                    nullable: false
+                  name: activity_action
+                  type: TEXT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: origin
+                  type: TEXT
+              - column:
+                  name: data_url
+                  type: TEXT
+              - column:
+                  name: data_type
+                  type: TEXT
+              - column:
+                  name: data_frontend_url
+                  type: TEXT
+              - column:
+                  name: parent_data_url
+                  type: TEXT
+              - column:
+                  name: parent_data_type
+                  type: TEXT
+              - column:
+                  name: user_url
+                  type: TEXT
+              - column:
+                  name: additional_object
+                  type: JSON
+              - column:
+                  defaultValueBoolean: true
+                  name: public
+                  type: BOOLEAN
+              - column:
+                  defaultValueBoolean: false
+                  name: stale
+                  type: BOOLEAN
+            tableName: activity
